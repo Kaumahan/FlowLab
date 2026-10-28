@@ -1,0 +1,52 @@
+{
+  "name": "flowlab",
+  "productName": "FlowLab",
+  "version": "1.0.0",
+  "description": "Offline workflow automation learning workbench",
+  "main": "main.js",
+  "author": "Your Name",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win",
+    "release": "electron-builder --win --publish always"
+  },
+  "build": {
+    "appId": "com.danaccion.flowlab",
+    "productName": "FlowLab",
+    "files": [
+      "main.js",
+      "app/**",
+      "build/icon.png"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        "portable",
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "FlowLab-Setup-${version}.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Kaumahan",
+        "repo": "flowlab"
+      }
+    ],
+    "portable": {
+      "artifactName": "FlowLab-Portable-${version}.${ext}"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  }
+}

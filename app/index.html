@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlowLab – offline automation workbench</title>
+<style>
+:root{--bg:#10141c;--pn:#171d29;--ln:#2a3447;--tx:#dde4f0;--mu:#8793a8;--ac:#3dd6b0;--tr:#f2b84b;--bd:#ff7a6b;color-scheme:dark}
+@media(prefers-color-scheme:light){:root{--bg:#eef1f6;--pn:#fff;--ln:#cdd5e2;--tx:#1b2332;--mu:#5c6880;--ac:#0b9a79;--tr:#b87a06;--bd:#d6402f;color-scheme:light}}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{font:14px/1.4 "Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--tx);display:grid;grid-template-rows:auto 1fr 230px}
+header{display:flex;gap:8px;align-items:center;padding:8px 12px;background:var(--pn);border-bottom:1px solid var(--ln);flex-wrap:wrap}
+h1{font:600 16px Georgia,serif;margin:0 10px 0 0}
+button,select,input,textarea{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--ln);border-radius:6px;padding:5px 9px}
+button{cursor:pointer}button:hover{border-color:var(--ac)}button.go{background:var(--ac);color:#06201a;border-color:var(--ac);font-weight:600}
+:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+#gen{flex:1;min-width:220px}
+main{display:grid;grid-template-columns:170px 1fr 270px;min-height:0}
+aside{background:var(--pn);padding:10px;overflow:auto}#pal{border-right:1px solid var(--ln)}#ins{border-left:1px solid var(--ln)}
+aside h3{font-size:12px;color:var(--mu);margin:12px 0 6px;font-weight:600}
+.pi2{display:block;width:100%;text-align:left;margin-bottom:5px;border-left:4px solid var(--ac)}.pi2.t{border-left-color:var(--tr)}
+#cv{overflow:auto;position:relative;background:radial-gradient(var(--ln) 1px,transparent 1px) 0 0/22px 22px}
+#world{position:relative;width:2400px;height:1400px}svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+svg path{fill:none;stroke:var(--ac);stroke-width:2;pointer-events:stroke;cursor:pointer}svg path:hover{stroke:var(--bd)}
+.nd{position:absolute;width:160px;height:46px;background:var(--pn);border:1px solid var(--ln);border-left:5px solid var(--ac);border-radius:8px;padding:5px 10px;cursor:grab;user-select:none}
+.nd.t{border-left-color:var(--tr)}.nd.sel{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac)}.nd.ok{background:color-mix(in srgb,var(--ac) 18%,var(--pn))}.nd.er{background:color-mix(in srgb,var(--bd) 22%,var(--pn))}
+.nd b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nd small{color:var(--mu);font-size:11px}
+.pt{position:absolute;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--ac);cursor:crosshair}.pt.pi{left:-8px;top:17px;border-color:var(--mu)}.pt.po{right:-8px}
+#ins label{display:block;font-size:12px;color:var(--mu);margin-top:9px}#ins input,#ins textarea,#ins select{width:100%;margin-top:3px}#ins textarea{min-height:90px;font:12px ui-monospace,Consolas,monospace}
+footer{background:var(--pn);border-top:1px solid var(--ln);display:grid;grid-template-rows:auto 1fr;min-height:0}
+.tabs{display:flex;gap:4px;padding:6px 10px}.tabs button.on{border-color:var(--ac);color:var(--ac)}
+pre{margin:0;padding:6px 12px 12px;overflow:auto;font:12px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap}
+.hint{color:var(--mu);font-size:12px}
+@media(max-width:800px){main{grid-template-columns:120px 1fr}#ins{display:none}}
+
+#docs{position:fixed;inset:0;z-index:50;background:var(--bg);display:none;grid-template-rows:auto 1fr}#docs.on{display:grid}
+.dh{display:flex;gap:10px;align-items:center;padding:8px 14px;background:var(--pn);border-bottom:1px solid var(--ln);flex-wrap:wrap}.dh b{font:600 16px Georgia,serif}#dtabs{display:flex;gap:4px;flex:1;flex-wrap:wrap}#dtabs button.on{border-color:var(--ac);color:var(--ac)}
+#dc{overflow:auto;padding:12px 24px 70px}#dc>div{max-width:880px;margin:0 auto;line-height:1.55}
+#dc h2{font:600 20px Georgia,serif;margin:28px 0 6px;border-bottom:1px solid var(--ln);padding-bottom:4px}#dc h3{font-size:14px;margin:18px 0 4px}
+#dc code{font:12.5px ui-monospace,Consolas,monospace;background:var(--pn);border:1px solid var(--ln);border-radius:4px;padding:0 4px}
+#dc table{border-collapse:collapse;width:100%;margin:8px 0;font-size:13px}#dc th,#dc td{border:1px solid var(--ln);padding:5px 8px;text-align:left;vertical-align:top}#dc th{background:var(--pn)}
+#dc pre{background:var(--pn);border:1px solid var(--ln);border-radius:6px;padding:8px 10px;overflow:auto;font:12px/1.5 ui-monospace,Consolas,monospace;white-space:pre}
+.tg{border-left:4px solid var(--tr);background:var(--bg);padding:8px 10px;margin:10px 0;font-size:12px;line-height:1.5;border-radius:0 6px 6px 0}.tg code{font:11.5px ui-monospace,Consolas,monospace}
+svg.lg{width:30px;height:30px;flex:none}
+#abt{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:16px}#abt.on{display:flex}
+#abt .box{background:var(--pn);border:1px solid var(--ln);border-radius:10px;max-width:640px;max-height:90vh;overflow:auto;padding:18px 22px;font-size:13px;line-height:1.55}
+#abt .lgrow{display:flex;align-items:center;gap:10px;font:600 20px Georgia,serif;margin-bottom:8px}#abt p{margin:8px 0}
+.note{border-left:4px solid var(--tr);background:var(--pn);padding:8px 12px;margin:10px 0;border-radius:0 6px 6px 0}
+</style></head><body>
+<header>
+<svg class="lg" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#10141c"/><path d="M16 32C28 32 28 18 46 18M16 32C28 32 28 46 46 46" stroke="#3dd6b0" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="16" cy="32" r="7" fill="#f2b84b"/><circle cx="46" cy="18" r="6" fill="#3dd6b0"/><circle cx="46" cy="46" r="6" fill="#3dd6b0"/></svg><h1>FlowLab</h1><button id="docb">Docs</button><button id="abb">About</button>
+<button class="go" id="run">Run workflow</button>
+<select id="ex" title="Load a ready-made workflow"></select>
+<input id="gen" placeholder='Describe it: "when form submitted, add tag lead, wait 1 day, send sms Hi {{ $json.name }}"'>
+<button id="mk">Generate</button>
+<button id="exj">Export JSON</button><button id="imj">Import JSON</button>
+<button id="exc">Download compiled .js</button><button id="exn">Export n8n JSON</button><button id="clr">Clear</button>
+</header>
+<main>
+<aside id="pal"></aside>
+<div id="cv"><div id="world"><svg id="sv"></svg></div></div>
+<aside id="ins"><span class="hint">Click a node to edit it. Drag from a right dot to a left dot to connect. Click a line to delete it. Delete key removes the selected node.</span></aside>
+</main>
+<footer>
+<div class="tabs"><button data-t="log" class="on">Run log</button><button data-t="json">Workflow JSON</button><button data-t="code">Compiled code</button><button data-t="n8n">n8n JSON</button></div>
+<pre id="out"></pre>
+</footer>
+<script>
+/* ---------- 1. Node catalogue: type -> label, fields, defaults ---------- */
+const T={
+ manual:{n:'Manual start',t:1,f:[['data','Starting data (JSON)',1]],d:{data:'{"name":"Ada","email":"ada@example.com","phone":"+639171234567","score":72}'}},
+ form:{n:'Form submitted (GHL)',t:1,f:[['data','Sample submission (JSON)',1]],d:{data:'{"name":"Ada","email":"ada@example.com","phone":"+639171234567","score":72}'}},
+ webhook:{n:'Webhook (n8n)',t:1,f:[['data','Sample body (JSON)',1]],d:{data:'{"event":"order.paid","amount":120}'}},
+ schedule:{n:'Schedule',t:1,f:[['data','Tick data (JSON)',1]],d:{data:'{"tick":1}'}},
+ set:{n:'Set field',f:[['key','Field name'],['value','Value']],d:{key:'status',value:'new'}},
+ if:{n:'IF',o:2,f:[['left','Value'],['op','Operator',0,['equals','contains','greater than','exists']],['right','Compare to']],d:{left:'{{ $json.score }}',op:'greater than',right:'50'}},
+ code:{n:'Code (JS)',f:[['js','JavaScript – $json in, return an object',1]],d:{js:'return {...$json, upper: String($json.name).toUpperCase()};'}},
+ wait:{n:'Wait',f:[['sec','Seconds (simulated)']],d:{sec:'60'}},
+ sms:{n:'Send SMS',f:[['to','To'],['body','Message',1]],d:{to:'{{ $json.phone }}',body:'Hi {{ $json.name }}!'}},
+ email:{n:'Send email',f:[['to','To'],['subj','Subject'],['body','Body',1]],d:{to:'{{ $json.email }}',subj:'Welcome',body:'Hi {{ $json.name }}, thanks for signing up.'}},
+ tag:{n:'Add tag (GHL)',f:[['tag','Tag']],d:{tag:'new-lead'}},
+ http:{n:'HTTP request',f:[['url','URL'],['method','Method',0,['GET','POST']]],d:{url:'https://api.github.com/zen',method:'GET'}},
+ log:{n:'Log',f:[],d:{}}
+};
+const TG={
+ code:['Runs your own JavaScript on the data coming in, for logic the other nodes cannot do (scoring, math, text, dates).','Read the incoming data with <code>$json</code>, then <code>return</code> an object. Copy the old fields with <code>{...$json}</code> and add new ones, e.g. <code>return {...$json, total: $json.price * 2};</code>. A mistake turns the node red and the log shows the error.','Not typed here. <code>$json</code> is the output of the previous node, and whatever you return becomes the next node\'s <code>$json</code>.'],
+ manual:['Starts the workflow only when you press Run.','Edit the starting data (JSON), connect it to your first step, then press <b>Run workflow</b>.','From you. You type it in the data box above; nothing else supplies it.'],
+ form:['Starts when someone submits a form. The data is what they typed.','Write a sample submission using your form\'s field names, connect your first step, and read values later with <code>{{ $json.name }}</code>.','In real life, from the form itself: every field the person filled in becomes a key (<code>name</code>, <code>email</code>, ...). Here it is the sample you typed, standing in for a real submission.'],
+ webhook:['Starts when another app sends data to your flow\'s web address (a payment, booking or order).','Paste a sample of what the app sends as the body, connect your steps and press <b>Run workflow</b> to test. Real calls need the compiled script or n8n.','From the other app\'s request: it sends JSON in the body of its call. Here it is the sample you typed. Check that app\'s documentation for the exact shape.'],
+ schedule:['Starts on a clock, such as every day at 9 AM. It carries no data of its own.','Connect a step that fetches the data (HTTP or Code), then act on it. Run simulates one tick; use cron or n8n for real timing.','Nowhere. A clock tick has no data, so this JSON is only a placeholder. Real data has to be fetched by a later step (HTTP or Code).']};
+let S={nodes:[],edges:[]},sel=null,seq=1;
+const $=s=>document.querySelector(s);
+
+/* ---------- 2. Expressions: "{{ $json.name }}" ---------- */
+const tpl=(s,j)=>String(s).replace(/\{\{(.+?)\}\}/g,(m,e)=>{try{return new Function('$json','return ('+e+')')(j)}catch(x){return ''}});
+const cmp=(l,op,r)=>op=='equals'?String(l)==String(r):op=='contains'?String(l).includes(r):op=='exists'?l!==''&&l!=null:Number(l)>Number(r);
+
+/* ---------- 3. Interpreter: runs the graph in the browser ---------- */
+async function exec(n,j,log){
+ const raw=n.p,p={};
+ for(const k in raw)p[k]=(k=='js'||k=='data')?raw[k]:tpl(raw[k],j);
+ const d=T[n.type];
+ if(d.t)return[JSON.parse(raw.data||'{}')];
+ switch(n.type){
+  case'set':return[{...j,[p.key]:p.value}];
+  case'if':{const r=cmp(p.left,p.op,p.right);log('  condition → '+r);return r?[j,null]:[null,j]}
+  case'code':return[await new Function('$json','return (async()=>{'+raw.js+'})()')(j)];
+  case'wait':log('  (simulated wait '+p.sec+'s)');return[j];
+  case'sms':log('  SMS to '+p.to+': '+p.body);return[{...j,smsSent:true}];
+  case'email':log('  EMAIL to '+p.to+' | '+p.subj+' | '+p.body);return[{...j,emailSent:true}];
+  case'tag':return[{...j,tags:[...(j.tags||[]),p.tag]}];
+  case'http':{const r=await fetch(p.url,{method:p.method});const t=await r.text();let x;try{x=JSON.parse(t)}catch{x=t}return[{...j,response:x}]}
+  default:log('  '+JSON.stringify(j));return[j];
+ }
+}
+async function run(){
+ const log=[],L=m=>{log.push(m);$('#out').textContent=log.join('\n')};
+ tab('log');document.querySelectorAll('.nd').forEach(e=>e.classList.remove('ok','er'));
+ const start=S.nodes.find(n=>T[n.type].t);if(!start)return L('Add a trigger node first (amber).');
+ async function walk(id,j,depth){
+  if(depth>50)return L('Stopped: loop detected');
+  const n=S.nodes.find(x=>x.id==id),el=document.getElementById(id);
+  L('▶ '+T[n.type].n);
+  try{const out=await exec(n,j,L);el.classList.add('ok');L('  data: '+JSON.stringify(out.find(o=>o!=null)));
+   for(const e of S.edges)if(e.from==id&&out[e.port]!=null)await walk(e.to,out[e.port],depth+1)}
+  catch(x){el.classList.add('er');L('  ERROR: '+x.message)}
+ }
+ await walk(start.id,{},0);L('✔ finished');
+}
+
+/* ---------- 4. Compiler: graph -> standalone Node.js script ---------- */
+const q=s=>'`'+String(s).replace(/\\/g,'\\\\').replace(/`/g,'\\`').replace(/\{\{(.+?)\}\}/g,(m,e)=>'${'+e.replace(/\$json/g,'json')+'}')+'`';
+function body(n){const p=n.p;switch(n.type){
+ case'set':return`return [{...json, [${JSON.stringify(p.key)}]: ${q(p.value)}}];`;
+ case'if':return`return cmp(${q(p.left)}, ${JSON.stringify(p.op)}, ${q(p.right)}) ? [json, null] : [null, json];`;
+ case'code':return`const $json = json;\n  return [await (async () => {\n${p.js}\n  })()];`;
+ case'wait':return`await new Promise(r => setTimeout(r, ${Number(p.sec)||0} * 1000));\n  return [json];`;
+ case'sms':return`console.log('SMS to', ${q(p.to)}, ':', ${q(p.body)});\n  return [{...json, smsSent: true}];`;
+ case'email':return`console.log('EMAIL to', ${q(p.to)}, '|', ${q(p.subj)}, '|', ${q(p.body)});\n  return [{...json, emailSent: true}];`;
+ case'tag':return`return [{...json, tags: [...(json.tags || []), ${q(p.tag)}]}];`;
+ case'http':return`const r = await fetch(${q(p.url)}, {method: ${JSON.stringify(p.method)}});\n  const t = await r.text(); let d; try { d = JSON.parse(t) } catch { d = t }\n  return [{...json, response: d}];`;
+ case'log':return`console.log(JSON.stringify(json));\n  return [json];`;
+ default:return`return [${p.data||'{}'}];`}}
+function compile(){
+ const trig=S.nodes.find(n=>T[n.type].t);
+ let c=`// Generated by FlowLab. Run with: node workflow.js  (Node 18+)\nconst cmp = ${cmp.toString()};\n\n`;
+ S.nodes.forEach(n=>c+=`// ${T[n.type].n}\nasync function ${n.id}(json) {\n  ${body(n)}\n}\n\n`);
+ c+=`const fns = { ${S.nodes.map(n=>n.id).join(', ')} };\nconst edges = ${JSON.stringify(S.edges.map(e=>[e.from,e.port,e.to]))}; // [from, outputPort, to]\n\n`;
+ c+=`async function walk(id, json) {\n  const out = await fns[id](json);\n  for (const [from, port, to] of edges)\n    if (from === id && out[port] != null) await walk(to, out[port]);\n}\n\nwalk(${JSON.stringify(trig?trig.id:'')}, {}).then(() => console.log('done'));\n`;
+ return c;
+}
+
+/* ---------- 5. Generator: plain English -> nodes ---------- */
+function gen(text){
+ const parts=text.split(/\s*(?:,|->|=>|\bthen\b|\bafter that\b)\s*/i).map(s=>s.trim()).filter(Boolean);
+ const out=[];const add=(type,p)=>out.push({type,p:{...T[type].d,...p}});
+ for(const s0 of parts){const s=s0.toLowerCase();let m;
+  if(/form|submit/.test(s)&&/when|on|new/.test(s))add('form',{});
+  else if(/webhook/.test(s))add('webhook',{});
+  else if(/schedule|every|daily|hourly/.test(s))add('schedule',{});
+  else if(/manual|start/.test(s))add('manual',{});
+  else if(m=s0.match(/\bif\s+(\w+)\s+(?:is\s+)?(>|greater than|equals|=|contains|exists)\s*(\S*)/i)){const o=m[2];add('if',{left:'{{ $json.'+m[1]+' }}',op:o=='>'||o=='greater than'?'greater than':o=='contains'?'contains':o=='exists'?'exists':'equals',right:m[3]})}
+  else if(m=s0.match(/\btag\s+["']?([\w-]+)/i))add('tag',{tag:m[1]});
+  else if(/wait|delay/.test(s)){m=s.match(/(\d+)\s*(sec|min|hour|day)/);const u={sec:1,min:60,hour:3600,day:86400};add('wait',{sec:m?String(m[1]*u[m[2]]):'60'})}
+  else if(/sms|text/.test(s)){m=s0.match(/(?:sms|text)\s+(.+)/i);add('sms',{body:m?m[1].replace(/^["']|["']$/g,''):'Hi {{ $json.name }}!'})}
+  else if(/email/.test(s)){m=s0.match(/email\s+(.+)/i);add('email',m?{body:m[1].replace(/^["']|["']$/g,'')}:{})}
+  else if(m=s0.match(/https?:\/\/\S+/))add('http',{url:m[0]});
+  else if(m=s0.match(/\bset\s+(\w+)\s+(?:to|=)\s+(.+)/i))add('set',{key:m[1],value:m[2]});
+  else if(/code|script/.test(s))add('code',{});
+  else if(/log/.test(s))add('log',{});}
+ if(!out.length)return false;
+ if(!T[out[0].type].t)out.unshift({type:'manual',p:{...T.manual.d}});
+ S={nodes:[],edges:[]};seq=1;
+ out.forEach((o,i)=>{const id='n'+seq++;S.nodes.push({id,type:o.type,p:o.p,x:30+(i%5)*190,y:40+Math.floor(i/5)*130+(i%2)*30});if(i)S.edges.push({from:'n'+i,port:0,to:id})});
+ return true;
+}
+
+/* ---------- 6. UI: palette, canvas, inspector ---------- */
+function palette(){let h='<h3>Triggers</h3>';
+ for(const k in T)if(T[k].t)h+=`<button class="pi2 t" data-a="${k}">${T[k].n}</button>`;
+ h+='<h3>Actions &amp; logic</h3>';
+ for(const k in T)if(!T[k].t)h+=`<button class="pi2" data-a="${k}">${T[k].n}</button>`;
+ $('#pal').innerHTML=h;
+ $('#pal').onclick=e=>{const a=e.target.dataset.a;if(!a)return;const id='n'+seq++;S.nodes.push({id,type:a,p:{...T[a].d},x:60+(S.nodes.length%6)*30,y:60+(S.nodes.length%6)*30});sel=id;draw();inspect()}}
+const H=n=>T[n.type].o?58:46;
+function outPos(n,i){const o=T[n.type].o||1;return[n.x+160,n.y+(o==2?16+i*26:23)]}
+function draw(){
+ const w=$('#world');w.querySelectorAll('.nd').forEach(e=>e.remove());
+ S.nodes.forEach(n=>{const d=T[n.type],e=document.createElement('div');
+  e.className='nd'+(d.t?' t':'')+(sel==n.id?' sel':'');e.id=n.id;e.style.cssText=`left:${n.x}px;top:${n.y}px;height:${H(n)}px`;
+  const sub=n.type=='if'?'true / false':(n.p.tag||n.p.key||n.p.url||n.p.sec&&n.p.sec+'s'||n.p.to||'');
+  e.innerHTML=`<b>${d.n}</b><small>${String(sub).replace(/</g,'&lt;').slice(0,24)}</small>`+(d.t?'':'<i class="pt pi" data-in="1"></i>')+Array.from({length:d.o||1},(_,i)=>`<i class="pt po" data-p="${i}" style="top:${(d.o==2?10+i*26:17)}px"></i>`).join('');
+  e.onmousedown=ev=>{if(ev.target.classList.contains('pt'))return;sel=n.id;const sx=ev.clientX-n.x,sy=ev.clientY-n.y;
+   const mv=m=>{n.x=Math.max(0,m.clientX-sx);n.y=Math.max(0,m.clientY-sy);e.style.left=n.x+'px';e.style.top=n.y+'px';edges()};
+   const up=()=>{removeEventListener('mousemove',mv);removeEventListener('mouseup',up);sync()};addEventListener('mousemove',mv);addEventListener('mouseup',up);
+   document.querySelectorAll('.nd').forEach(x=>x.classList.toggle('sel',x.id==n.id));inspect()};
+  w.appendChild(e)});
+ edges();sync()}
+function edges(){
+ let h='';S.edges.forEach((e,i)=>{const a=S.nodes.find(n=>n.id==e.from),b=S.nodes.find(n=>n.id==e.to);if(!a||!b)return;
+  const[x1,y1]=outPos(a,e.port),x2=b.x,y2=b.y+23,c=Math.max(40,Math.abs(x2-x1)/2);
+  h+=`<path data-e="${i}" d="M${x1} ${y1}C${x1+c} ${y1} ${x2-c} ${y2} ${x2} ${y2}"><title>Click to delete</title></path>`});
+ $('#sv').innerHTML=h;
+ $('#sv').querySelectorAll('path').forEach(p=>p.onclick=()=>{S.edges.splice(p.dataset.e,1);draw()})}
+$('#world').addEventListener('mousedown',ev=>{
+ const po=ev.target.closest('.po');if(!po)return;ev.stopPropagation();
+ const n=S.nodes.find(x=>x.id==po.parentNode.id),port=+po.dataset.p,wr=$('#world').getBoundingClientRect(),[x1,y1]=outPos(n,port);
+ const tmp=document.createElementNS('http://www.w3.org/2000/svg','path');$('#sv').appendChild(tmp);
+ const mv=m=>tmp.setAttribute('d',`M${x1} ${y1}L${m.clientX-wr.left} ${m.clientY-wr.top}`);
+ const up=m=>{removeEventListener('mousemove',mv);removeEventListener('mouseup',up);tmp.remove();
+  const t=document.elementFromPoint(m.clientX,m.clientY),nd=t&&t.closest('.nd');
+  if(nd&&nd.id!=n.id&&!T[S.nodes.find(x=>x.id==nd.id).type].t&&!S.edges.some(e=>e.from==n.id&&e.port==port&&e.to==nd.id)){S.edges.push({from:n.id,port,to:nd.id});draw()}};
+ addEventListener('mousemove',mv);addEventListener('mouseup',up)});
+function inspect(){
+ const n=S.nodes.find(x=>x.id==sel),el=$('#ins');if(!n){el.innerHTML='<span class="hint">Click a node to edit it.</span>';return}
+ const d=T[n.type];let h=`<b>${d.n}</b> <span class="hint">(${n.id})</span><div class="hint">Use {{ $json.field }} to insert data. <code>$json</code> is the data arriving from the previous step.</div>`;
+ if(TG[n.type])h+=`<div class="tg"><b>Definition</b><br>${TG[n.type][0]}<br><b>How to use it</b><br>${TG[n.type][1]}<br><b>Where this JSON comes from</b><br>${TG[n.type][2]}</div>`;
+ d.f.forEach(([k,l,area,opts])=>{h+=`<label>${l}`+(opts?`<select data-k="${k}">${opts.map(o=>`<option${n.p[k]==o?' selected':''}>${o}</option>`).join('')}</select>`:area?`<textarea data-k="${k}"></textarea>`:`<input data-k="${k}">`)+'</label>'});
+ h+='<br>'+(d.t?'<button id="tg">Full guide</button> ':'')+'<button id="del">Delete node</button>';el.innerHTML=h;
+ el.querySelectorAll('[data-k]').forEach(i=>{if(i.tagName!='SELECT')i.value=n.p[i.dataset.k]??'';i.oninput=()=>{n.p[i.dataset.k]=i.value;const s=document.getElementById(n.id);if(s)s.querySelector('small').textContent=String(n.p.tag||n.p.key||n.p.url||n.p.to||'').slice(0,24);sync()}});
+ $('#del').onclick=delNode;const tg=$('#tg');if(tg)tg.onclick=()=>openDoc('trig','t-'+n.type)}
+function delNode(){S.nodes=S.nodes.filter(n=>n.id!=sel);S.edges=S.edges.filter(e=>e.from!=sel&&e.to!=sel);sel=null;draw();inspect()}
+addEventListener('keydown',e=>{if(e.key=='Delete'&&sel&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))delNode()});
+$('#cv').addEventListener('mousedown',e=>{if(e.target.id=='cv'||e.target.id=='world'||e.target.id=='sv'){sel=null;document.querySelectorAll('.nd').forEach(x=>x.classList.remove('sel'));inspect()}});
+
+/* ---------- 7. Tabs, import/export, persistence ---------- */
+let cur='log';
+function tab(t){cur=t;document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t==t));if(t!='log')sync()}
+function sync(){try{localStorage.setItem('flowlab',JSON.stringify(S))}catch(e){}
+ if(cur=='json')$('#out').textContent=JSON.stringify(S,null,2);if(cur=='code')$('#out').textContent=compile();if(cur=='n8n'){const r=toN8n();$('#out').textContent='Notes before importing:\n- '+r.notes.join('\n- ')+'\n\n'+JSON.stringify(r.wf,null,2)}}
+document.querySelector('.tabs').onclick=e=>{const t=e.target.dataset.t;if(t){tab(t);if(t=='log')$('#out').textContent='Press "Run workflow" to execute.'}};
+const save=(name,txt,type)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;a.click()};
+$('#run').onclick=run;
+$('#mk').onclick=()=>{if(gen($('#gen').value)){sel=null;draw();inspect()}else alert('Try: when form submitted, add tag lead, wait 1 day, send sms Hello')};
+$('#gen').onkeydown=e=>{if(e.key=='Enter')$('#mk').click()};
+$('#exj').onclick=()=>save('workflow.json',JSON.stringify(S,null,2),'application/json');
+$('#exc').onclick=()=>save('workflow.js',compile(),'text/javascript');
+$('#clr').onclick=()=>{S={nodes:[],edges:[]};sel=null;draw();inspect()};
+$('#imj').onclick=()=>{const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=async()=>{try{S=JSON.parse(await i.files[0].text());seq=S.nodes.length+100;sel=null;draw();inspect()}catch(e){alert('That file is not a FlowLab workflow.')}};i.click()};
+
+palette();
+try{const s=JSON.parse(localStorage.getItem('flowlab'));if(s&&s.nodes.length){S=s;seq=S.nodes.length+100}else throw 0}
+catch(e){gen('when form submitted, if score greater than 50, add tag hot-lead, send sms Thanks {{ $json.name }}, wait 1 day, send email Here is your guide')}
+draw();$('#out').textContent='Press "Run workflow" to execute. Tabs on top of this panel show the workflow as JSON and as compiled Node.js code.';
+
+/* ---------- 8. Real-world example workflows ---------- */
+// node: [id, type, params, x, y]   edge: [from, outputPort, to,'Nowhere. A clock tick has no data, so this JSON is only a placeholder. Real data has to be fetched by a later step (HTTP or Code).']
+const EX={
+'Lead qualification & routing':{d:'Teaches: scoring with a Code node, IF with two branches. Hot leads get an instant SMS and a sales alert; cold leads go into a nurture tag, a 1-day wait and a guide email. Change budget to 1000 and run again to see the other branch.',
+n:[['a','form',{data:'{"name":"Ada Cruz","email":"ada@example.com","phone":"+639171234567","budget":8000,"source":"facebook"}'},20,110],
+['b','code',{js:"let s = 0;\nif ($json.budget > 5000) s += 50;\nif ($json.source == 'referral') s += 30;\nif ($json.phone) s += 20;\nreturn {...$json, score: s};"},220,110],
+['c','if',{left:'{{ $json.score }}',op:'greater than',right:'60'},420,110],
+['d','tag',{tag:'hot-lead'},640,30],['e','sms',{body:'Hi {{ $json.name }}, a specialist will call you within 5 minutes.'},840,30],
+['f','email',{to:'sales@mycompany.com',subj:'HOT lead: {{ $json.name }}',body:'Score {{ $json.score }} from {{ $json.source }}. Call {{ $json.phone }}.'},1040,30],
+['g','tag',{tag:'nurture'},640,200],['h','wait',{sec:'86400'},840,200],
+['i','email',{subj:'Your free guide',body:'Hi {{ $json.name }}, here is the guide you asked for.'},1040,200]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['e',0,'f'],['c',1,'g'],['g',0,'h'],['h',0,'i']]},
+
+'Missed-call text back':{d:'Teaches: nested IFs, two paths that converge on one node, and a safe "skip" branch for bad data. Set phone to empty in the webhook sample to see the skip path.',
+n:[['a','webhook',{data:'{"event":"call.missed","phone":"+639171234567","name":"Ben"}'},20,120],
+['b','if',{left:'{{ $json.phone }}',op:'exists',right:''},220,120],
+['c','if',{left:'{{ $json.name }}',op:'exists',right:''},440,40],
+['d','sms',{to:'{{ $json.phone }}',body:'Hi {{ $json.name }}, sorry we missed your call! Reply here or book at example.com/book'},680,10],
+['e','sms',{to:'{{ $json.phone }}',body:'Hi! Sorry we missed your call. Reply here and we will get right back to you.'},680,150],
+['f','tag',{tag:'missed-call'},920,85],['g','log',{},440,270]],
+e:[['a',0,'b'],['b',0,'c'],['b',1,'g'],['c',0,'d'],['c',1,'e'],['d',0,'f'],['e',0,'f']]},
+
+'Appointment confirmation + reminders':{d:'Teaches: long sequential drips with Wait nodes (waits are simulated here, but the compiled script really waits). Confirmation now, reminder 1 day before, last SMS 1 hour before.',
+n:[['a','webhook',{data:'{"name":"Cara","email":"cara@example.com","phone":"+639171234567","service":"Consultation","when":"Friday 3 PM"}'},20,40],
+['b','email',{subj:'Booking confirmed: {{ $json.service }}',body:'Hi {{ $json.name }}, you are booked for {{ $json.when }}.'},220,40],
+['c','tag',{tag:'booked'},420,40],['d','wait',{sec:'86400'},620,40],
+['e','sms',{body:'Reminder: your {{ $json.service }} is tomorrow ({{ $json.when }}).'},820,40],
+['f','wait',{sec:'82800'},20,200],['g','sms',{body:'Starting in 1 hour. See you soon, {{ $json.name }}!'},220,200],['h','tag',{tag:'reminded'},420,200]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['e',0,'f'],['f',0,'g'],['g',0,'h']]},
+
+'Paid order: totals + VIP treatment':{d:'Teaches: Code node for math (tax and total), then a VIP branch that sets a coupon code and uses it in the email. Change amount to 90 to take the regular-receipt path.',
+n:[['a','webhook',{data:'{"event":"order.paid","customer":"Dan","email":"dan@example.com","amount":240,"items":3}'},20,120],
+['b','code',{js:'const tax = +($json.amount * 0.12).toFixed(2);\nreturn {...$json, tax, total: +($json.amount + tax).toFixed(2)};'},220,120],
+['c','if',{left:'{{ $json.amount }}',op:'greater than',right:'200'},420,120],
+['d','tag',{tag:'vip'},640,30],['e','set',{key:'coupon',value:'VIP15'},840,30],
+['f','email',{subj:'Thank you, VIP!',body:'Total paid {{ $json.total }}. Use code {{ $json.coupon }} for 15% off next time.'},1040,30],
+['g','email',{subj:'Your receipt',body:'Thanks {{ $json.customer }}. Total paid {{ $json.total }}.'},640,210],['h','tag',{tag:'customer'},840,210]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['e',0,'f'],['c',1,'g'],['g',0,'h']]},
+
+'Abandoned cart recovery':{d:'Teaches: a timed follow-up that branches on cart value (bigger carts get a coupon), and two branches that merge into a final tag.',
+n:[['a','webhook',{data:'{"name":"Eli","email":"eli@example.com","cart_value":89,"item":"Running shoes"}'},20,120],
+['b','email',{subj:'You left something behind',body:'Hi {{ $json.name }}, your {{ $json.item }} is still in your cart.'},220,120],
+['c','wait',{sec:'86400'},420,120],
+['d','if',{left:'{{ $json.cart_value }}',op:'greater than',right:'80'},620,120],
+['e','set',{key:'coupon',value:'SAVE10'},840,30],
+['f','email',{subj:'10% off your {{ $json.item }}',body:'Use code {{ $json.coupon }} at checkout, {{ $json.name }}.'},1040,30],
+['g','email',{subj:'Still thinking about it?',body:'Your {{ $json.item }} is waiting for you.'},840,210],
+['h','tag',{tag:'cart-abandoned'},1240,120]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['e',0,'f'],['d',1,'g'],['f',0,'h'],['g',0,'h']]},
+
+'API enrichment (needs internet)':{d:'Teaches: HTTP node, reading nested response data in a Code node, and branching on the result. Calls the public GitHub API, so it needs an internet connection. If it fails, the HTTP node turns red, just like a real failed call.',
+n:[['a','manual',{data:'{"email":"ada@example.com"}'},20,100],
+['b','http',{url:'https://api.github.com/users/octocat',method:'GET'},220,100],
+['c','code',{js:"return {...$json, followers: $json.response.followers, company: $json.response.company || 'unknown'};"},420,100],
+['d','if',{left:'{{ $json.followers }}',op:'greater than',right:'1000'},620,100],
+['e','tag',{tag:'influencer'},840,30],['f','tag',{tag:'standard'},840,200]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['d',1,'f']]},
+
+'Review request + unhappy-customer alert':{d:'Teaches: waiting before asking, then routing by rating. Happy customers get a review link; unhappy ones trigger a manager alert and an apology instead of a public review request. Change rating to 2 to test.',
+n:[['a','webhook',{data:'{"customer":"Gina","email":"gina@example.com","phone":"+639171234567","rating":5,"job":"Aircon cleaning"}'},20,120],
+['w','wait',{sec:'172800'},200,120],['b','if',{left:'{{ $json.rating }}',op:'greater than',right:'3'},380,120],
+['c','sms',{to:'{{ $json.phone }}',body:'Thanks {{ $json.customer }}! Would you leave us a quick review? example.com/review'},600,30],['d','tag',{tag:'promoter'},820,30],
+['e','email',{to:'manager@mycompany.com',subj:'Unhappy customer: {{ $json.customer }}',body:'Rated {{ $json.rating }}/5 for {{ $json.job }}. Please call them.'},600,210],
+['f','tag',{tag:'detractor'},820,210],['g','sms',{to:'{{ $json.phone }}',body:'We are sorry, {{ $json.customer }}. A manager will contact you today.'},1040,210]],
+e:[['a',0,'w'],['w',0,'b'],['b',0,'c'],['c',0,'d'],['b',1,'e'],['e',0,'f'],['f',0,'g']]},
+
+'No-show recovery with repeat-offender check':{d:'Teaches: using a counter field to change behaviour. First-time no-shows get a friendly reschedule sequence; repeat no-shows are flagged high-risk and sent to a manager.',
+n:[['a','webhook',{data:'{"name":"Hal","email":"hal@example.com","phone":"+639171234567","noShowCount":1}'},20,120],
+['b','tag',{tag:'no-show'},220,120],['c','if',{left:'{{ $json.noShowCount }}',op:'greater than',right:'1'},420,120],
+['d','tag',{tag:'high-risk'},640,30],['e','email',{to:'manager@mycompany.com',subj:'Repeat no-show: {{ $json.name }}',body:'Missed {{ $json.noShowCount }} appointments. Consider requiring a deposit.'},840,30],
+['f','sms',{to:'{{ $json.phone }}',body:'Hi {{ $json.name }}, we missed you today. Want to pick a new time?'},640,210],
+['g','wait',{sec:'86400'},840,210],['h','email',{subj:'Let us reschedule',body:'Hi {{ $json.name }}, here is a link to rebook: example.com/book'},1040,210]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['c',1,'f'],['f',0,'g'],['g',0,'h']]},
+
+'Plan-based onboarding (3-way routing)':{d:'Teaches: chaining IFs to get more than two outcomes (pro, team, everything else). Each plan sets different data and gets its own welcome. Try plan = pro, team or free.',
+n:[['a','webhook',{data:'{"name":"Ivy","email":"ivy@example.com","plan":"team"}'},20,150],
+['b','if',{left:'{{ $json.plan }}',op:'equals',right:'pro'},220,150],
+['c','set',{key:'seats',value:'5'},440,30],['d','email',{subj:'Welcome to Pro',body:'Hi {{ $json.name }}, you have {{ $json.seats }} seats.'},640,30],['e','tag',{tag:'plan-pro'},840,30],
+['f','if',{left:'{{ $json.plan }}',op:'equals',right:'team'},440,230],
+['g','set',{key:'seats',value:'20'},660,150],['h','email',{subj:'Welcome to Team',body:'Hi {{ $json.name }}, invite your {{ $json.seats }} teammates.'},860,150],['i','tag',{tag:'plan-team'},1060,150],
+['j','email',{subj:'Welcome!',body:'Hi {{ $json.name }}, upgrade any time for more features.'},660,330],['k','tag',{tag:'plan-free'},860,330]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['b',1,'f'],['f',0,'g'],['g',0,'h'],['h',0,'i'],['f',1,'j'],['j',0,'k']]},
+
+'Birthday promo (scheduled)':{d:'Teaches: a Schedule trigger plus date logic in a Code node. Today is compared to the contact birthday as month-day text. Edit the Code node so birthday matches today (for example 10-28) to see the promo branch.',
+n:[['a','schedule',{data:'{"tick":1}'},20,120],
+['b','code',{js:"const t = new Date();\nreturn {...$json, name: 'Fay', phone: '+639171234567', birthday: '3-15', today: (t.getMonth() + 1) + '-' + t.getDate()};"},220,120],
+['c','if',{left:'{{ $json.birthday }}',op:'equals',right:'{{ $json.today }}'},420,120],
+['d','sms',{to:'{{ $json.phone }}',body:'Happy birthday {{ $json.name }}! Enjoy 20% off today with code BDAY20.'},640,30],['e','tag',{tag:'birthday-promo-sent'},860,30],
+['f','log',{},640,210]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['c',1,'f']]},
+
+'Overdue invoice escalation':{d:'Teaches: stepped escalation with nested IFs. Over 14 days overdue: final notice and collections tag. 8 to 14 days: firm email plus SMS. Up to 7 days: friendly reminder. Change days_overdue to try each tier.',
+n:[['a','webhook',{data:'{"client":"Jo\'s Bakery","email":"jo@example.com","phone":"+639171234567","amount":500,"days_overdue":20}'},20,150],
+['b','if',{left:'{{ $json.days_overdue }}',op:'greater than',right:'14'},220,150],
+['c','email',{subj:'FINAL NOTICE: invoice overdue',body:'{{ $json.client }}, {{ $json.amount }} is {{ $json.days_overdue }} days overdue. Pay now to avoid collections.'},440,30],['d','tag',{tag:'collections'},660,30],
+['e','if',{left:'{{ $json.days_overdue }}',op:'greater than',right:'7'},440,230],
+['f','email',{subj:'Payment overdue',body:'{{ $json.client }}, please settle {{ $json.amount }} within 3 days.'},660,150],['g','sms',{to:'{{ $json.phone }}',body:'Reminder: invoice of {{ $json.amount }} is overdue.'},860,150],
+['h','email',{subj:'Friendly reminder',body:'Hi {{ $json.client }}, just a nudge about your invoice of {{ $json.amount }}.'},660,330]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['b',1,'e'],['e',0,'f'],['f',0,'g'],['e',1,'h']]},
+
+'Support ticket triage':{d:'Teaches: classifying text with regular expressions in a Code node, then routing on the result. Urgent tickets page the on-call person; others get an auto-reply and a category tag (the tag value is itself an expression).',
+n:[['a','webhook',{data:'{"from":"jay@example.com","subject":"URGENT: site is down","message":"Checkout fails for every customer"}'},20,120],
+['b','code',{js:"const text = ($json.subject + ' ' + $json.message).toLowerCase();\nconst urgent = /urgent|down|outage|asap/.test(text);\nconst category = /refund|charge|invoice/.test(text) ? 'billing' : /error|bug|fails|down/.test(text) ? 'bug' : 'general';\nreturn {...$json, urgent, category};"},220,120],
+['c','if',{left:'{{ $json.urgent }}',op:'equals',right:'true'},420,120],
+['d','sms',{to:'+639170000000',body:'URGENT ticket from {{ $json.from }}: {{ $json.subject }}'},640,30],['e','tag',{tag:'urgent'},840,30],
+['f','email',{to:'{{ $json.from }}',subj:'We are on it',body:'Your urgent ticket was escalated to our on-call engineer.'},1040,30],
+['g','tag',{tag:'{{ $json.category }}'},640,210],['h','email',{to:'{{ $json.from }}',subj:'We got your message',body:'Thanks, we will reply within one business day.'},840,210]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['e',0,'f'],['c',1,'g'],['g',0,'h']]},
+
+'Webinar follow-up (attended vs missed)':{d:'Teaches: the same funnel splitting into two different follow-ups. Attendees get a sales offer; no-shows get the replay. Change attended to yes to switch branches.',
+n:[['a','form',{data:'{"name":"Kai","email":"kai@example.com","phone":"+639171234567","attended":"no"}'},20,120],
+['b','email',{subj:'You are registered!',body:'Hi {{ $json.name }}, the webinar starts tomorrow at 7 PM.'},220,120],
+['c','wait',{sec:'86400'},420,120],['d','if',{left:'{{ $json.attended }}',op:'equals',right:'yes'},620,120],
+['e','tag',{tag:'attended'},840,30],['f','email',{subj:'Thanks for joining',body:'Hi {{ $json.name }}, here is your attendee-only offer.'},1040,30],
+['g','tag',{tag:'missed-webinar'},840,210],['h','email',{subj:'Here is the replay',body:'Hi {{ $json.name }}, sorry we missed you. Watch the replay here.'},1040,210]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['e',0,'f'],['d',1,'g'],['g',0,'h']]}
+};
+$('#ex').innerHTML='<option value="">Load an example…</option>'+Object.keys(EX).map(k=>`<option>${k}</option>`).join('');
+$('#ex').onchange=()=>{const x=EX[$('#ex').value];if(!x)return;
+ S={nodes:x.n.map(([i,t,p,px,py])=>({id:'n'+i,type:t,p:{...T[t].d,...p},x:px,y:py})),edges:x.e.map(([f,p,t])=>({from:'n'+f,port:p,to:'n'+t}))};
+ seq=200;sel=null;tab('log');draw();inspect();$('#out').textContent=x.d+'\n\nPress "Run workflow" to try it.';$('#ex').value=''};
+
+/* ---------- 9. n8n exporter: FlowLab graph -> n8n workflow JSON ---------- */
+// In n8n: Workflows > top-right menu > Import from file (or paste the JSON onto the canvas).
+const uid=()=>'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c=='x'?r:r&3|8).toString(16)});
+const xp=s=>String(s).includes('{{')?'='+s:String(s);   // n8n expressions start with "="
+function toN8n(){
+ const notes=new Set(),used={},nm={},src={},nodes=[],conn={};
+ const uniq=b=>{let k=b,i=2;while(used[k])k=b+' '+i++;used[k]=1;return k};
+ S.nodes.forEach(n=>nm[n.id]=uniq(T[n.type].n.replace(/ \(.*\)/,'')));
+ const N=(name,type,v,p,pos,x)=>nodes.push({parameters:p,id:uid(),name,type:'n8n-nodes-base.'+type,typeVersion:v,position:pos,...x});
+ const link=(a,port,b)=>{const m=(conn[a]=conn[a]||{main:[]}).main;while(m.length<=port)m.push([]);m[port].push({node:b,type:'main',index:0})};
+ S.nodes.forEach(n=>{
+  const p=n.p,name=nm[n.id],pos=[Math.round(n.x*1.5),n.y],tpl2=t=>'`'+String(t).replace(/\{\{(.+?)\}\}/g,(m,e)=>'${'+e+'}')+'`';
+  if(T[n.type].t){
+   const k=n.type=='schedule'?['scheduleTrigger',1.2,{rule:{interval:[{field:'hours',hoursInterval:1}]}}]:n.type=='manual'?['manualTrigger',1,{}]:['webhook',2,{httpMethod:'POST',path:'flowlab-'+n.id,options:{}}];
+   N(name,k[0],k[1],k[2],pos,k[0]=='webhook'?{webhookId:uid()}:{});
+   const sn=uniq('Sample data '+n.id);N(sn,'code',2,{jsCode:'return [{json: '+(p.data||'{}')+'}];'},[pos[0]+150,pos[1]]);
+   link(name,0,sn);src[n.id]=sn;
+   notes.add('Each trigger is followed by a "Sample data" Code node so your {{ $json }} expressions work while testing. Delete it for production (real webhook data arrives under $json.body).');
+   if(n.type=='form')notes.add('"Form submitted (GHL)" becomes a generic Webhook trigger; point your form tool at its URL.');
+   return}
+  switch(n.type){
+   case'set':N(name,'set',3.4,{assignments:{assignments:[{id:uid(),name:p.key,value:xp(p.value),type:'string'}]},includeOtherFields:true,options:{}},pos);break;
+   case'tag':N(name,'set',3.4,{assignments:{assignments:[{id:uid(),name:'tags',value:'={{ [...($json.tags || []), '+tpl2(p.tag)+'] }}',type:'array'}]},includeOtherFields:true,options:{}},pos);
+    notes.add('"Add tag" has no n8n equivalent, so it appends to a "tags" field. Replace it with your CRM node (HighLevel, HubSpot, etc.).');break;
+   case'if':{const op={'greater than':{type:'number',operation:'gt'},contains:{type:'string',operation:'contains'},exists:{type:'string',operation:'exists',singleValue:true},equals:{type:'string',operation:'equals'}}[p.op];
+    N(name,'if',2.2,{conditions:{options:{caseSensitive:true,leftValue:'',typeValidation:'loose'},conditions:[{id:uid(),leftValue:xp(p.left),rightValue:xp(p.right),operator:op}],combinator:'and'},options:{}},pos);break}
+   case'code':N(name,'code',2,{mode:'runOnceForEachItem',jsCode:'const result = await (async () => {\n'+p.js+'\n})();\nreturn { json: result };'},pos);break;
+   case'wait':N(name,'wait',1.1,{resume:'timeInterval',amount:Number(p.sec)||0,unit:'seconds'},pos,{webhookId:uid()});break;
+   case'sms':N(name,'twilio',1,{resource:'sms',operation:'send',from:'+10000000000',to:xp(p.to),message:xp(p.body)},pos);
+    notes.add('SMS uses the Twilio node: add Twilio credentials and set the From number.');notes.add('Twilio and Send Email nodes output their own result, not your original data. Reference earlier data with $("Node name").item.json.');break;
+   case'email':N(name,'emailSend',2.1,{fromEmail:'you@example.com',toEmail:xp(p.to||''),subject:xp(p.subj),text:xp(p.body),options:{}},pos);
+    notes.add('Email uses the Send Email (SMTP) node: add SMTP credentials and a real From address.');notes.add('Twilio and Send Email nodes output their own result, not your original data. Reference earlier data with $("Node name").item.json.');break;
+   case'http':N(name,'httpRequest',4.2,{method:p.method,url:xp(p.url),options:{}},pos);
+    notes.add('HTTP Request puts the response fields directly on $json (FlowLab nests them under $json.response). Adjust Code nodes that read $json.response.');break;
+   default:N(name,'noOp',1,{},pos)}
+ });
+ S.edges.forEach(e=>link(src[e.from]||nm[e.from],e.port,nm[e.to]));
+ return{wf:{name:'FlowLab export',nodes,connections:conn,pinData:{},settings:{executionOrder:'v1'},active:false},notes:[...notes]};
+}
+$('#exn').onclick=()=>save('workflow-n8n.json',JSON.stringify(toN8n().wf,null,2),'application/json');
+
+/* ---------- 10. Built-in docs (works offline) ---------- */
+/*DOCS-START*/
+const tb=(h,r)=>'<table><tr>'+h.map(x=>'<th>'+x+'</th>').join('')+'</tr>'+r.map(a=>'<tr>'+a.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('')+'</table>';
+const ol=a=>'<ol>'+a.map(x=>'<li>'+x+'</li>').join('')+'</ol>';
+
+const tsec=(id,t,o)=>`<h2 id="t-${id}">${t}</h2><p><b>Definition.</b> ${o.def}</p><p><b>Use it when</b> ${o.when}</p><p><b>Setting.</b> ${o.set}</p><h3>How to use it in FlowLab</h3>${ol(o.how)}<h3>Example</h3><p>${o.ex}</p><h3>In n8n</h3><p>${o.n8n}</p><h3>In GoHighLevel</h3><p>${o.ghl}</p><h3>Common mistakes</h3><ul>${o.bad.map(x=>'<li>'+x+'</li>').join('')}</ul>`;
+const DOCS={
+guide:()=>`<div><h2>Quick start</h2>`+ol([
+ 'Pick a workflow from <b>Load an example…</b> or click nodes in the left palette to add them.',
+ 'Drag nodes to move them. Connect by dragging from a node\'s <b>right dot</b> to another node\'s <b>left dot</b>. An IF node has two right dots: top = true, bottom = false. Click a line to delete it.',
+ 'Click a node to edit it in the right panel. Use <code>{{ $json.field }}</code> to reuse data from earlier steps.',
+ 'Press <b>Run workflow</b>. Nodes turn green (ok) or red (error) and the log shows the data after every step.',
+ 'Open the bottom tabs: <b>Workflow JSON</b>, <b>Compiled code</b> (a standalone Node.js script) and <b>n8n JSON</b>.'])+`
+<h2>How data flows</h2>
+<p>A trigger starts the run with its sample data, one object such as <code>{"name":"Ada","score":72}</code>. Every node receives that object, may change it, and passes it on. A <b>Set field</b> node that writes <code>status</code> means every later node can read <code>{{ $json.status }}</code>. An <b>IF</b> node sends the object out of only one of its two outputs. A node with nothing connected after it ends that branch.</p>
+<h2>Using the generator</h2>
+<p>Type a sentence in the top box and press Enter. Steps are split on commas, "then", or "->". Recognised phrases: <code>when form submitted</code>, <code>webhook</code>, <code>every day</code>, <code>if score greater than 50</code>, <code>add tag hot-lead</code>, <code>wait 2 days</code>, <code>send sms Hello {{ $json.name }}</code>, <code>send email ...</code>, <code>set status to won</code>, a URL (HTTP request), <code>log</code>. The generator builds a straight chain (IF continues from its true output), so add false branches by hand.</p>
+<h2>Suggested learning path</h2>`+ol([
+ 'Run all the examples. For each, change one value in the trigger data and run again to see another branch.',
+ 'Rebuild the lead qualification example from an empty canvas without looking.',
+ 'Read the <b>Compiled code</b> tab. Each node is one function, the edge list is a plain array, and <code>walk()</code> is the whole engine.',
+ 'Add a node type: put an entry in <code>T</code>, a <code>case</code> in <code>exec()</code> (runs in the browser), and a <code>case</code> in <code>body()</code> (generates code).',
+ 'Export to n8n, run <code>npx n8n</code> locally, import the file and fix what the notes list.',
+ 'Rebuild one flow by hand in a GoHighLevel trial account using the GHL tab as a map.'])+`
+<div class="note"><b>Limits.</b> FlowLab passes one object at a time (n8n passes lists of items), SMS/email/wait are simulated, there are no credentials, and webhooks don't listen on a real URL.</div></div>`,
+
+trig:()=>`<div><h2>What is a trigger?</h2>
+<p>A <b>trigger</b> is the event that starts a workflow. Every workflow needs one. A trigger has no input dot (nothing comes before it) and its output is the <b>starting data</b> that every later node can read through <code>{{ $json.field }}</code>. FlowLab has four triggers (amber nodes). Select one on the canvas and press <b>How to use this trigger</b> in the right panel to jump to its section here.</p>
+<h2>Which trigger do I need?</h2>`+tb(['Situation','Trigger'],[
+ ['I am learning or testing a flow with my own data','<a href="#t-manual" data-j="t-manual">Manual start</a>'],
+ ['Someone fills in a form, survey or booking page','<a href="#t-form" data-j="t-form">Form submitted</a>'],
+ ['Another app should tell my flow something happened (payment, call, order)','<a href="#t-webhook" data-j="t-webhook">Webhook</a>'],
+ ['Something must happen on a clock (daily report, reminders, polling)','<a href="#t-schedule" data-j="t-schedule">Schedule</a>']])+`
+<div class="note">In FlowLab, <b>Run workflow</b> always starts from the first trigger on the canvas and feeds it the sample data you typed. Nothing listens on a real URL or clock inside the editor; real listening and ticking are covered in each section below.</div>`+
+tsec('manual','Manual start',{
+ def:`Starts only when <i>you</i> press Run. It has no outside event behind it.`,
+ when:`you are learning, debugging one node, running a one-off job, or testing a branch with specific data.`,
+ set:`<b>Starting data (JSON)</b>: the object the run begins with, for example <code>{"email":"ada@example.com"}</code>. Keys need double quotes.`,
+ how:[`Add <b>Manual start</b> from the palette.`,`Type the starting data as valid JSON.`,`Connect its right dot to your first action.`,`Press <b>Run workflow</b>. Change the JSON and run again to test other cases.`],
+ ex:`The <i>API enrichment</i> example starts with an email address and looks up more data from it.`,
+ n8n:`<b>Manual Trigger</b>. It outputs nothing, so add a Code or Edit Fields node to supply test data (the FlowLab export does this for you with a "Sample data" node). You run it with <b>Execute Workflow</b>.`,
+ ghl:`There is no direct equivalent. The closest options are adding a contact to a workflow by hand or in bulk, or using the workflow's test option with a test contact.`,
+ bad:[`Invalid JSON (single quotes, trailing commas) makes the run fail at the first node.`,`Expecting a manual trigger to run by itself: it never does.`]}) +
+tsec('form','Form submitted (GHL)',{
+ def:`Fires when a person submits a form or survey. The starting data is what they typed, one key per field.`,
+ when:`you capture leads, quote requests, sign-ups or bookings and want an instant response: score, tag, text, email.`,
+ set:`<b>Sample submission (JSON)</b>. Use the same field names your real form would produce, such as <code>name</code>, <code>email</code>, <code>phone</code>, plus any custom answers.`,
+ how:[`Add <b>Form submitted (GHL)</b>.`,`Write a sample submission with realistic values, including optional fields that are sometimes empty.`,`Connect an IF with <b>exists</b> on <code>{{ $json.phone }}</code> if later steps need a phone number.`,`Use <code>{{ $json.name }}</code> in your SMS or email text and run it.`],
+ ex:`<i>Lead qualification and routing</i> scores the submission, then sends hot leads a text within seconds.`,
+ n8n:`Use a <b>Webhook</b> trigger and point your form tool at its URL (the FlowLab export does this), or n8n's own <b>Form Trigger</b>, which hosts a simple form for you. Form fields arrive under <code>$json.body</code> for webhooks.`,
+ ghl:`Trigger <b>Form Submitted</b> (and the similar Survey Submitted). Choose the form, optionally filter by which form or page. Fields are saved to the contact, so later steps use merge fields like <code>{{contact.email}}</code>.`,
+ bad:[`Sample field names that differ from the real form, so expressions return empty text.`,`Assuming every submission has a phone number.`,`Not planning for duplicate submissions (the same person submitting twice).`]}) +
+tsec('webhook','Webhook',{
+ def:`A web address that another system calls (usually an HTTP POST with JSON) when something happens. The starting data is the request body.`,
+ when:`an outside app can send events: a payment, an order, a booking, a missed call, a form tool, a support ticket.`,
+ set:`<b>Sample body (JSON)</b>: what the other system would send, for example <code>{"event":"order.paid","amount":120}</code>.`,
+ how:[`Add <b>Webhook (n8n)</b> and paste a real example payload from the sending app's documentation as the sample body.`,`Branch on <code>{{ $json.event }}</code> with IF nodes if the app sends several event types.`,`Run in FlowLab to test the logic with the sample.`,`To receive <i>real</i> calls offline, use the compiled script (see below).`],
+ ex:`<i>Paid order: totals and VIP treatment</i> receives an order, calculates tax and rewards big orders.`,
+ n8n:`<b>Webhook</b> node. It shows a <b>Test URL</b> (works while the editor waits for a call) and a <b>Production URL</b> (works only when the workflow is <b>Active</b>). You choose the HTTP method and path. Body fields are under <code>$json.body</code>, query parameters under <code>$json.query</code>.`,
+ ghl:`Trigger <b>Inbound Webhook</b>, usually a premium trigger. GHL gives you a URL; after the first call you map the incoming fields to use them.`,
+ bad:[`In n8n, reading <code>$json.name</code> when the data is at <code>$json.body.name</code>.`,`Testing the production URL while the workflow is inactive.`,`Leaving the endpoint open: check a secret token or signature from the sender.`,`Doing slow work before answering. Senders may retry, so the same event can arrive twice; make steps safe to repeat.`]})+`
+<h3>Receive real webhooks offline (optional)</h3>
+<p>Download the compiled script, then change two things: make your trigger function pass its input through, and replace the final <code>walk(...)</code> line with a small server. Replace <code>n1</code> with your trigger's id.</p>
+<pre>async function n1(json) {
+  return [json];            // was: return [{ ...sample data... }];
+}
+// delete the last line:  walk("n1", {}).then(...)
+require("http").createServer((req, res) => {
+  let b = "";
+  req.on("data", c => b += c);
+  req.on("end", async () => {
+    await walk("n1", JSON.parse(b || "{}"));
+    res.end("ok");
+  });
+}).listen(3000);</pre>
+<p>Run <code>node workflow.js</code>, then in another terminal: <code>curl -X POST localhost:3000 -H "Content-Type: application/json" -d '{"name":"Ada","score":80}'</code> (the quotes differ on Windows PowerShell).</p>`+
+tsec('schedule','Schedule',{
+ def:`Starts on a clock: every N minutes, daily at 9 AM, weekdays only, and so on. It carries no data of its own, only the fact that it is time.`,
+ when:`work should happen regularly: daily reports, reminder checks, birthday lookups, polling an API, cleaning up old records.`,
+ set:`<b>Tick data (JSON)</b>: a stand-in for the empty tick, for example <code>{"tick":1}</code>. Later nodes (HTTP request, Code) must fetch or create the real data.`,
+ how:[`Add <b>Schedule</b>.`,`Connect a Code or HTTP node that gets the data to work on, then an IF to decide who qualifies.`,`Run once in FlowLab to simulate a single tick.`,`To run it for real offline, run the compiled script from your computer's scheduler.`],
+ ex:`<i>Birthday promo</i> checks every day whether today matches a contact's birthday.`,
+ n8n:`<b>Schedule Trigger</b>: pick an interval or a cron expression and check the workflow's timezone. It runs only while the workflow is <b>Active</b>.`,
+ ghl:`GHL has no cron trigger. It uses contact and date based triggers such as birthday or custom date reminders, and Wait steps for delays (wait until a time, or a number of days).`,
+ bad:[`Forgetting that a schedule has no data, so there is nothing to act on until a later node fetches it.`,`Mixing up timezones (server time versus your local time).`,`A run that takes longer than the interval, so runs overlap.`,`In n8n, not switching the workflow to Active.`]})+`
+<h3>Running a compiled workflow on a schedule</h3>`+tb(['System','Example (daily at 9:00)'],[
+ ['Linux / macOS cron','<code>0 9 * * * node /path/to/workflow.js</code> (add with <code>crontab -e</code>)'],
+ ['Windows','Task Scheduler: create a daily task running <code>node C:\\path\\workflow.js</code>']])+`
+<h3>Cron cheat-sheet</h3>`+tb(['Pattern','Meaning'],[['<code>*/15 * * * *</code>','every 15 minutes'],['<code>0 * * * *</code>','every hour on the hour'],['<code>0 9 * * *</code>','every day at 09:00'],['<code>0 9 * * 1-5</code>','weekdays at 09:00'],['<code>0 0 1 * *</code>','midnight on the 1st of each month']])+`
+<p>The five fields are minute, hour, day of month, month, day of week.</p>
+<h2>Other triggers you will meet in n8n</h2>`+tb(['Trigger','Starts when','Typical use'],[
+ ['Webhook','another system calls its URL','payments, forms, custom apps'],
+ ['Schedule Trigger','the clock matches','reports, polling, reminders'],
+ ['Form Trigger','someone submits the form n8n hosts','simple intake forms'],
+ ['Email Trigger (IMAP)','a new email arrives in a mailbox','support inboxes, invoices'],
+ ['App triggers (Gmail, Telegram, GitHub, Google Sheets...)','something changes in that app','react to new rows, messages, issues'],
+ ['Execute Workflow Trigger','another workflow calls this one','reusable sub-workflows'],
+ ['Error Trigger','another workflow fails','alerts and clean-up'],
+ ['Chat Trigger','someone sends a message in n8n chat','AI assistants']])+`
+<p><b>Polling versus instant:</b> some app triggers check the app every few minutes (polling), others receive an instant webhook. Instant ones react faster; polling ones are easier to set up.</p>
+<h2>Other triggers you will meet in GoHighLevel</h2>
+<p class="hint">Names vary by account and version. Confirm in your workflow trigger list.</p>`+tb(['Trigger','Starts when','Typical use'],[
+ ['Contact Created','a contact is added from any source','welcome message, tagging by source'],
+ ['Contact Tag','a tag is added or removed','hand-offs between workflows'],
+ ['Form Submitted / Survey Submitted','a form or survey is sent','lead capture and qualification'],
+ ['Appointment status','a booking is created, confirmed, cancelled or marked no-show','reminders, no-show recovery'],
+ ['Opportunity / pipeline stage changed','a deal moves or changes status','sales follow-up, win notices'],
+ ['Customer Replied','the contact answers by SMS, email or chat','stop a sequence, alert a rep'],
+ ['Call / missed call','a call ends or is missed','text-back'],
+ ['Inbound Webhook','another system calls GHL','outside apps and payments (usually premium)'],
+ ['Birthday / custom date reminder','a date on the contact arrives','promos and renewals'],
+ ['Payments / order submitted','a purchase happens','receipts, onboarding']])+`
+<p><b>How to use any trigger well:</b> add a filter so it only enrolls the right contacts, send a test event before publishing, and plan what happens if the same contact is enrolled twice.</p></div>`,
+
+n8n:()=>`<div><div class="note">n8n is updated often. Menu names and node versions here are a guide; confirm details in the official docs (docs.n8n.io).</div>
+<h2>Core ideas</h2>
+<p>An n8n <b>workflow</b> is nodes joined by connections. A <b>trigger</b> node starts it. Data moves as a <b>list of items</b>, each shaped <code>{ json: {...} }</code>, and most nodes run once <i>per item</i>. That is the biggest difference from FlowLab, which carries a single object. Each run is stored as an <b>execution</b> you can inspect afterwards.</p>
+<h2>Expression cheat-sheet</h2>`+tb(['Goal','Expression'],[
+ ['Field of the current item','<code>{{ $json.name }}</code>'],
+ ['Webhook body field','<code>{{ $json.body.email }}</code>'],
+ ['Data from an earlier node','<code>{{ $(\'Edit Fields\').item.json.name }}</code>'],
+ ['All items from the previous node','<code>{{ $input.all() }}</code>'],
+ ['Fallback value','<code>{{ $json.company || \'unknown\' }}</code>'],
+ ['Math / any JavaScript','<code>{{ $json.price * 1.12 }}</code>'],
+ ['Current date','<code>{{ $now.toFormat(\'yyyy-LL-dd\') }}</code>']])+`
+<p>In an exported JSON file a value is an expression when the string starts with <code>=</code>, for example <code>"=Hi {{ $json.name }}"</code>. In the editor you switch a field to <i>Expression</i> mode.</p>
+<h2>FlowLab nodes and their n8n equivalents</h2>`+tb(['FlowLab','n8n node','Notes'],[
+ ['Manual start','Manual Trigger','Starts a test run from the editor.'],
+ ['Form submitted / Webhook','Webhook','Has a <b>Test URL</b> (only while listening) and a <b>Production URL</b> (only when the workflow is active).'],
+ ['Schedule','Schedule Trigger','Interval or cron expression.'],
+ ['Set field','Edit Fields (Set)','Turn on "Include Other Input Fields" to keep existing data.'],
+ ['IF','IF','Output 0 = true, output 1 = false. Use <b>Switch</b> for 3 or more paths.'],
+ ['Code','Code','Choose "Run Once for Each Item" (return <code>{ json: {...} }</code>) or "All Items" (return a list).'],
+ ['Wait','Wait','Pauses the execution, then resumes.'],
+ ['Send SMS','Twilio','Needs credentials and a From number.'],
+ ['Send email','Send Email','Needs SMTP credentials.'],
+ ['Add tag','Your CRM node','For example HighLevel or HubSpot.'],
+ ['HTTP request','HTTP Request','Response fields land directly on <code>$json</code>.'],
+ ['Log','No Operation','Placeholder node; check the output in the editor.']])+`
+<h2>Patterns you will meet</h2>
+<ul><li><b>Webhook, IF, action:</b> receive an event, check a condition, act. The most common shape.</li>
+<li><b>Merge:</b> use the Merge node when two branches must come back together and combine their data.</li>
+<li><b>Looping:</b> use <b>Loop Over Items</b> (batches) when you must process a list in chunks or call an API with rate limits.</li>
+<li><b>Retries:</b> in a node's Settings enable <b>Retry On Fail</b>. Enable <b>Continue On Fail</b> when one failure should not stop the run.</li>
+<li><b>Error handling:</b> create a workflow starting with <b>Error Trigger</b> and select it as the Error Workflow in the main workflow's settings.</li>
+<li><b>Reuse:</b> <b>Execute Workflow</b> calls another workflow like a function.</li></ul>
+<h2>Testing and debugging</h2>
+<ul><li><b>Execute Workflow</b> runs it once from the editor. Click any node to see its input and output.</li>
+<li><b>Pin data</b> freezes a node's output so you can test later nodes without re-calling APIs.</li>
+<li>Webhook test URLs only work while the editor is waiting; production URLs only work after you switch the workflow to <b>Active</b>.</li></ul>
+<h2>Run n8n on your machine</h2>
+<p>With Node.js installed: <code>npx n8n</code>, then open <code>http://localhost:5678</code>. With Docker: <code>docker run -it --rm -p 5678:5678 docker.n8n.io/n8nio/n8n</code>.</p>
+<h2>Importing a FlowLab export</h2>`+ol(['Click <b>Export n8n JSON</b> in FlowLab.','In n8n open a new workflow, then use the top-right menu and choose <b>Import from file</b> (or paste the JSON onto the canvas).','Read the "Notes before importing" list in the <b>n8n JSON</b> tab and fix each item: add credentials, replace placeholders, delete the Sample data nodes.','Run with <b>Execute Workflow</b> and compare with FlowLab\'s log.'])+`
+<h2>Common mistakes</h2>
+<ul><li>Forgetting that nodes run per item, so a Code node written for one object may need "Run Once for Each Item".</li>
+<li>Reading webhook data from <code>$json.name</code> instead of <code>$json.body.name</code>.</li>
+<li>Testing a production webhook URL while the workflow is inactive.</li></ul></div>`,
+
+ghl:()=>`<div><div class="note">GoHighLevel's menus, trigger names and plan features change often and differ by account. Treat this as a map and confirm each item in your account and the official help center (help.gohighlevel.com).</div>
+<h2>Core ideas</h2>
+<p>A GHL <b>workflow</b> (Automation, then Workflows) is built around a <b>contact</b>. One or more <b>triggers</b> enroll a contact, then <b>actions</b> run in order for that contact. Data is the contact's standard and custom fields, tags, opportunities and appointments, not free-form JSON as in n8n. A workflow only runs when it is set to <b>Published</b>; use the built-in test option with a test contact before publishing.</p>
+<h2>FlowLab concepts and their GHL equivalents</h2>`+tb(['FlowLab','GHL (typical name)','Notes'],[
+ ['Form submitted','Trigger: Form Submitted','Pick the form or survey. Fields map onto the contact.'],
+ ['Webhook','Trigger: Inbound Webhook','Usually a premium trigger; check your plan.'],
+ ['Schedule','Date-based triggers (e.g. Birthday Reminder, Custom Date Reminder)','GHL is event and contact driven, not cron driven.'],
+ ['Set field','Action: Update Contact Field','The field must exist (create custom fields first).'],
+ ['IF','Action: If/Else','Conditions test contact fields, tags, or other workflow data. Each branch has its own steps.'],
+ ['Wait','Action: Wait','Wait a time span, until a date, or until an event happens.'],
+ ['Send SMS','Action: Send SMS','Respect Do Not Disturb and opt-in rules.'],
+ ['Send email','Action: Send Email','Pick or write a template.'],
+ ['Add tag','Action: Add Tag','Tags are the usual way to trigger other workflows.'],
+ ['HTTP request','Action: Custom Webhook','Usually a premium action.'],
+ ['Code','Action: Custom Code','Usually a premium action.'],
+ ['Log','Action: Add Note / Internal Notification','']])+`
+<h2>Merge fields</h2>
+<p>GHL inserts contact data with merge fields instead of <code>{{ $json.x }}</code>.</p>`+tb(['FlowLab','GHL merge field'],[
+ ['<code>{{ $json.name }}</code>','<code>{{contact.first_name}}</code> or <code>{{contact.name}}</code>'],
+ ['<code>{{ $json.email }}</code>','<code>{{contact.email}}</code>'],
+ ['<code>{{ $json.phone }}</code>','<code>{{contact.phone}}</code>'],
+ ['Today\'s date','<code>{{right_now.date}}</code>'],
+ ['Custom field','The merge key shown for that field in Settings, Custom Fields']])+`
+<h2>Rebuilding a FlowLab design in GHL</h2>`+ol([
+ 'Automation, Workflows, <b>Create Workflow</b>, start from scratch.',
+ 'Add the trigger that matches your first FlowLab node.',
+ 'Add each action in the same order. Replace <code>{{ $json.x }}</code> with merge fields.',
+ 'For an IF, add If/Else and build the condition from a contact field or tag. FlowLab\'s computed values (like <code>score</code>) must first be saved to a custom field with Update Contact Field.',
+ 'Test with a test contact, check the enrollment history, then switch to <b>Published</b>.'])+`
+<h2>GHL versus n8n at a glance</h2>`+tb(['','n8n','GoHighLevel'],[
+ ['Data model','Lists of JSON items','Contact fields, tags, opportunities'],
+ ['Hosting','Self-host or cloud','Hosted SaaS only'],
+ ['Code','Code node built in','Custom Code is usually a paid add-on'],
+ ['Strength','Any API, any shape of data','Messaging, pipelines, calendars, funnels in one place'],
+ ['Cost model','Free to self-host; pay for hosting','Subscription plus per-use charges for SMS, email and premium actions']])+`
+<h2>Good habits</h2>
+<ul><li>Add a Wait before follow-up messages and keep messages inside sensible sending hours.</li>
+<li>Only message contacts who opted in, and honour opt-outs and Do Not Disturb. Check the rules for your country.</li>
+<li>Use tags as hand-offs between workflows (for example <code>hot-lead</code> triggers a sales workflow).</li>
+<li>Use a goal event or a stop condition so contacts who already booked do not receive the rest of a nurture sequence.</li></ul></div>`,
+
+ref:()=>`<div><h2>Node reference</h2>`+tb(['Type','Name','Kind','Fields','Outputs'],Object.entries(T).map(([k,d])=>['<code>'+k+'</code>',d.n,d.t?'trigger':'action',d.f.map(f=>f[1]).join(', ')||'none',d.o||1]))+`
+<h2>IF operators</h2>`+tb(['Operator','True when'],[['equals','text of both sides is identical'],['contains','left text includes the right text'],['greater than','left as a number is larger than right'],['exists','left is not empty']])+`
+<h2>Expressions</h2>
+<p><code>{{ ... }}</code> holds one JavaScript expression with <code>$json</code> in scope: <code>{{ $json.price * 2 }}</code>, <code>{{ $json.name.toUpperCase() }}</code>, <code>{{ $json.tags ? $json.tags.length : 0 }}</code>. If it throws, it becomes an empty string. Code nodes are not templated: write normal JavaScript, read <code>$json</code> and <code>return</code> an object.</p>
+<h2>Files</h2>`+tb(['File','What it is'],[
+ ['<code>workflow.json</code>','FlowLab\'s own format: <code>{nodes:[{id,type,p,x,y}], edges:[{from,port,to}]}</code>. <code>port</code> is the output index (IF: 0 true, 1 false).'],
+ ['<code>workflow.js</code>','Compiled Node.js 18+ script: one async function per node, an <code>edges</code> list, and a <code>walk()</code> that follows it. Run with <code>node workflow.js</code>.'],
+ ['<code>workflow-n8n.json</code>','n8n import file. See the n8n tab for caveats.']])+`
+<h2>Keyboard and mouse</h2>`+tb(['Action','How'],[['Move a node','Drag it'],['Connect','Drag right dot to a left dot'],['Delete a line','Click it'],['Delete a node','Select it, press Delete (or use the button in the right panel)'],['Close docs','Esc']])+`
+<h2>Examples index</h2>`+tb(['Example','What it teaches'],Object.keys(EX).map(k=>[k,EX[k].d.split(/\.\s/)[0].replace(/^Teaches:\s*/,'')]))+`
+<h2>Glossary</h2>`+tb(['Term','Meaning'],[
+ ['Trigger','The event that starts a workflow.'],['Action','A step that does something (send, tag, call).'],
+ ['Item / object','The data passed between steps. One object in FlowLab, a list of items in n8n.'],
+ ['Branch','A path chosen by an IF.'],['Merge field / expression','A placeholder replaced with real data when the step runs.'],
+ ['Execution / run','One pass of a workflow from trigger to end.'],['Compile','Turn the visual graph into code that runs without the editor.'],
+ ['Idempotent','Safe to run twice without double effects (for example, set a tag instead of adding a duplicate row).']])+`</div>`
+};
+/*DOCS-END*/
+const dv=document.createElement('div');dv.id='docs';dv.innerHTML='<div class="dh"><b>FlowLab docs</b><div id="dtabs"></div><button id="dx">Close</button></div><div id="dc"></div>';document.body.appendChild(dv);
+const DT=[['guide','Guide'],['trig','Triggers'],['n8n','n8n'],['ghl','GoHighLevel'],['ref','Reference']];
+function showDoc(k,a){$('#dtabs').innerHTML=DT.map(([a,b])=>`<button data-d="${a}" class="${a==k?'on':''}">${b}</button>`).join('');$('#dc').innerHTML=DOCS[k]();$('#dc').scrollTop=0;if(a){const t=document.getElementById(a);if(t)t.scrollIntoView()}}
+function openDoc(k,a){dv.classList.add('on');showDoc(k,a)}
+$('#dc').addEventListener('click',e=>{const j=e.target.dataset.j;if(j){e.preventDefault();showDoc('trig',j)}});
+$('#dtabs').onclick=e=>{if(e.target.dataset.d)showDoc(e.target.dataset.d)};
+$('#docb').onclick=()=>{dv.classList.add('on');showDoc('guide')};
+$('#dx').onclick=()=>dv.classList.remove('on');
+addEventListener('keydown',e=>{if(e.key=='Escape')dv.classList.remove('on')});
+
+/* ---------- 11. About, logo and disclaimer ---------- */
+const DISC=`<p><b>FlowLab is an independent, offline learning tool.</b> It is not affiliated with, endorsed by, or sponsored by n8n GmbH, HighLevel Inc. (GoHighLevel), or Anthropic.</p>
+<p><b>Trademarks.</b> n8n, GoHighLevel and any other product names are trademarks of their respective owners. They appear only to describe what FlowLab's exercises imitate or can export to.</p>
+<p><b>Original work.</b> FlowLab contains no code, logos, icons, templates or documentation copied from those products. Its name, logo, node names and example workflows are original. Concepts such as triggers, nodes and expressions are generic ideas shared across automation tools.</p>
+<p><b>Export feature.</b> "Export n8n JSON" writes a file in a format intended for import into n8n. It is unofficial, may stop working when n8n changes, and is provided for learning and interoperability.</p>
+<p><b>Simulations.</b> SMS, email and wait steps are simulated and send nothing. If you connect real services, you are responsible for following their terms, privacy law, and messaging rules (consent and opt-out).</p>
+<p><b>No warranty.</b> Provided "as is", without warranty of any kind, and not legal advice. Check the license and terms of any third-party product you use or imitate. The documentation inside the app is a general summary; confirm details in each product's official docs.</p>`;
+const ab=document.createElement('div');ab.id='abt';
+ab.innerHTML='<div class="box" role="dialog" aria-label="About FlowLab"><div class="lgrow">'+document.querySelector('svg.lg').outerHTML+'FlowLab</div>'+DISC+'<button class="go" id="abok">I understand</button></div>';
+document.body.appendChild(ab);
+$('#abb').onclick=()=>ab.classList.add('on');
+$('#abok').onclick=()=>{ab.classList.remove('on');try{localStorage.setItem('flowlab_ack','1')}catch(e){}};
+addEventListener('keydown',e=>{if(e.key=='Escape')ab.classList.remove('on')});
+try{if(!localStorage.getItem('flowlab_ack'))ab.classList.add('on')}catch(e){ab.classList.add('on')}
+</script></body></html>
