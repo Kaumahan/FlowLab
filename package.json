@@ -1,11 +1,7 @@
 {
   "name": "flowlab",
   "productName": "FlowLab",
-<<<<<<< HEAD
-  "version": "1.1.0",
-=======
-  "version": "1.0.1",
->>>>>>> eb225ab71f8915d58774d470ae1ff5004af50bb1
+  "version": "1.0.2",
   "description": "Offline workflow automation learning workbench",
   "main": "main.js",
   "author": "Your Name",
