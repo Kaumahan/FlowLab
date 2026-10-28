@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlowLab – offline automation workbench</title>
+<style>
+:root{--bg:#10141c;--pn:#171d29;--ln:#2a3447;--tx:#dde4f0;--mu:#8793a8;--ac:#3dd6b0;--tr:#f2b84b;--bd:#ff7a6b;--lg:#a294ff;--sms:#3b82f6;color-scheme:dark}
+@media(prefers-color-scheme:light){:root{--bg:#eef1f6;--pn:#fff;--ln:#cdd5e2;--tx:#1b2332;--mu:#5c6880;--ac:#0b9a79;--tr:#b87a06;--bd:#d6402f;--lg:#6a55d8;--sms:#2563eb;color-scheme:light}}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{font:14px/1.4 "Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--tx);display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) 230px}
+body.simon{grid-template-columns:minmax(0,1fr) 520px}
+header{grid-column:1/-1;display:flex;gap:8px;align-items:center;padding:8px 12px;background:var(--pn);border-bottom:1px solid var(--ln);flex-wrap:wrap}
+h1{font:600 16px Georgia,serif;margin:0 10px 0 0}
+button,select,input,textarea{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--ln);border-radius:6px;padding:5px 9px}
+button{cursor:pointer}button:hover{border-color:var(--ac)}button.go{background:var(--ac);color:#06201a;border-color:var(--ac);font-weight:600}
+button[aria-pressed="true"]{border-color:var(--ac);color:var(--ac)}
+:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+#gen{flex:1;min-width:220px}#ex{max-width:190px}
+.menu{position:relative}.menu summary{list-style:none;cursor:pointer;border:1px solid var(--ln);border-radius:6px;padding:5px 12px;background:var(--bg);user-select:none}
+.menu summary::-webkit-details-marker{display:none}.menu summary::after{content:" ▾";color:var(--mu)}.menu[open] summary,.menu summary:hover{border-color:var(--ac)}
+.mbox{position:absolute;right:0;top:calc(100% + 4px);z-index:70;background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:4px;display:flex;flex-direction:column;min-width:210px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.mbox button{border:0;text-align:left;background:transparent;padding:7px 10px}.mbox button:hover{background:var(--bg)}.mbox hr{border:0;border-top:1px solid var(--ln);margin:4px 0;width:100%}
+main{display:grid;grid-template-columns:170px 1fr 270px;min-height:0;position:relative}
+body.simon main{grid-template-columns:150px 1fr 250px}
+aside{background:var(--pn);padding:10px;overflow:auto;min-height:0}#pal{border-right:1px solid var(--ln)}#ins{border-left:1px solid var(--ln)}
+aside h3{font-size:12px;color:var(--mu);margin:12px 0 6px;font-weight:600}
+.pi2{display:block;width:100%;text-align:left;margin-bottom:5px;border-left:4px solid var(--ac)}.pi2.t{border-left-color:var(--tr)}.pi2.l{border-left-color:var(--lg)}
+.cvw{position:relative;min-width:0;min-height:0}
+#cv{position:absolute;inset:0;overflow:auto;background:radial-gradient(var(--ln) 1px,transparent 1px) 0 0/22px 22px}
+#zw{position:relative;width:2400px;height:1400px}
+#world{position:absolute;left:0;top:0;width:2400px;height:1400px;transform-origin:0 0}
+#sv{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+#sv path{fill:none;stroke:var(--ac);stroke-width:2;pointer-events:stroke;cursor:pointer;transition:opacity .3s}#sv path:hover{stroke:var(--bd)}
+#sv path.hot{stroke-width:3.5}#sv path.cold{opacity:.22}
+.zoom{position:absolute;left:10px;bottom:10px;display:flex;gap:2px;background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:2px;z-index:5}
+.zoom button{border:0;padding:3px 9px;min-width:30px;font-size:12px}
+.nd{position:absolute;width:160px;height:46px;background:var(--pn);border:1px solid var(--ln);border-left:5px solid var(--ac);border-radius:8px;padding:5px 10px;cursor:grab;user-select:none}
+.nd.t{border-left-color:var(--tr)}.nd.l{border-left-color:var(--lg)}
+.nd.sel{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac)}
+.nd.ok{background:color-mix(in srgb,var(--ac) 18%,var(--pn))}.nd.er{background:color-mix(in srgb,var(--bd) 22%,var(--pn))}.nd.wn{background:color-mix(in srgb,var(--tr) 20%,var(--pn))}
+.nd.ok::after,.nd.er::after,.nd.wn::after{position:absolute;top:-8px;right:-8px;width:18px;height:18px;border-radius:50%;font:700 11px/18px system-ui,sans-serif;text-align:center}
+.nd.ok::after{content:"✓";background:var(--ac);color:#06201a}.nd.wn::after{content:"!";background:var(--tr);color:#2a1a00}.nd.er::after{content:"✕";background:var(--bd);color:#fff}
+.nd.run{box-shadow:0 0 0 3px var(--tr);animation:pulse .9s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 7px color-mix(in srgb,var(--tr) 25%,transparent)}}
+.nd b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nd small{display:block;color:var(--mu);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt{position:absolute;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--ac);cursor:crosshair}.pt.pi{left:-8px;top:17px;border-color:var(--mu)}.pt.po{right:-8px}
+.pl{position:absolute;left:170px;font-size:10px;color:var(--mu);white-space:nowrap;pointer-events:none;max-width:110px;overflow:hidden;text-overflow:ellipsis}
+#ins label{display:block;font-size:12px;color:var(--mu);margin-top:9px}#ins input,#ins textarea,#ins select{width:100%;margin-top:3px}#ins textarea{min-height:90px;font:12px ui-monospace,Consolas,monospace}
+#ins input[type=checkbox]{width:auto;margin:0}
+#ins label.chk{display:flex;gap:7px;align-items:flex-start;color:var(--tx)}#ins label.chk input{margin-top:2px}
+.rule{border:1px solid var(--ln);border-radius:8px;padding:2px 6px 6px;margin-top:6px;position:relative;background:var(--bg)}
+#ins .rule input,#ins .rule select{margin-top:4px;padding:4px 7px}
+.rule .x{position:absolute;top:-9px;right:-7px;width:20px;height:20px;padding:0;border-radius:50%;line-height:16px;background:var(--pn)}
+.comb{display:block;margin:6px auto 0;font-size:11px;font-weight:700;padding:1px 12px;border-radius:999px;color:var(--lg);border-color:var(--lg)}
+.sm{font-size:12px;padding:3px 8px;margin-top:6px}
+.route{border-left:3px solid var(--lg);padding:4px 0 8px 8px;margin-top:12px}
+.rh{display:flex;gap:4px;align-items:center}#ins .rh input{flex:1;margin:0;font-weight:600}.rh button{padding:2px 7px}
+.rn{font-size:11px;color:var(--mu);margin-top:2px}
+details.lr{margin-top:14px;border-top:1px solid var(--ln);padding-top:8px}details.lr summary{cursor:pointer;font-size:12px;font-weight:600}
+#ins pre{margin:3px 0 0;padding:6px 8px;background:var(--bg);border:1px solid var(--ln);border-radius:6px;max-height:170px;font-size:11px;white-space:pre-wrap;word-break:break-word}
+.bad{color:var(--bd)}.wnt{color:var(--tr);font-size:12px;margin-top:4px}
+footer{background:var(--pn);border-top:1px solid var(--ln);display:grid;grid-template-rows:auto 1fr;min-height:0}
+.tabs{display:flex;gap:4px;padding:6px 10px}.tabs button.on{border-color:var(--ac);color:var(--ac)}
+pre{margin:0;padding:6px 12px 12px;overflow:auto;font:12px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap}
+.hint{color:var(--mu);font-size:12px}
+.hint code,.tg code{font:11.5px ui-monospace,Consolas,monospace}
+
+/* ---------- Test panel ---------- */
+#sim{display:none;grid-column:2;grid-row:2/4;padding:0;border-left:1px solid var(--ln);container-type:inline-size}
+body.simon #sim{display:block}
+.simh{position:sticky;top:0;z-index:3;display:flex;gap:8px;align-items:center;padding:8px 12px;background:var(--pn);border-bottom:1px solid var(--ln)}
+.simh b{font:600 15px Georgia,serif}
+.clk{margin-left:auto;font:12px ui-monospace,Consolas,monospace;color:var(--mu);white-space:nowrap}.clk b{font:inherit;color:var(--tx)}
+.ff{font-size:11px;color:var(--tr);font-weight:600}
+#simx{padding:2px 9px}
+.sec{padding:10px 12px 4px}
+#sim h4{margin:0 0 6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mu);font-weight:600}
+.formcard{background:#fff;color:#1b2332;border-radius:10px;padding:14px 16px;box-shadow:0 8px 24px rgba(0,0,0,.18);border:1px solid #dfe4ec}
+.formcard h5{font:600 17px Georgia,serif;margin:0}.formcard .url{margin:0 0 6px;color:#8793a8;font-size:11px}
+.formcard .fg{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.formcard .fg .cbx{grid-column:1/-1}
+@container (max-width:440px){.formcard .fg{grid-template-columns:1fr}}
+.formcard label{display:block;font-size:12px;color:#3a465c;margin-top:7px;min-width:0}
+.formcard input{width:100%;margin-top:3px;background:#fff;color:#1b2332;border:1px solid #cdd5e2;padding:5px 8px}
+.formcard label.cbx{display:flex;gap:8px;align-items:center}.formcard label.cbx input{width:auto;margin:0}
+.formcard .sub{margin-top:11px;width:100%;background:#0b9a79;border-color:#0b9a79;color:#fff;font-weight:600;padding:8px}
+.formcard .sub.press{filter:brightness(.85);transform:scale(.98)}
+.fnote{font-size:11px;color:#5c6880;margin-top:6px}.fnote a{color:#0b7a60}
+.req{background:var(--bg);border:1px solid var(--ln);border-radius:8px;padding:8px 10px;font:12px/1.55 ui-monospace,Consolas,monospace;word-break:break-all}
+.req .m{color:var(--tr);font-weight:700;margin-right:6px}.req .hd{color:var(--mu)}
+.req textarea{width:100%;min-height:110px;font:12px ui-monospace,Consolas,monospace;margin-top:6px}
+.req pre{padding:4px 0;max-height:140px}
+.row{display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap}
+.resp{font:12px ui-monospace,Consolas,monospace}.resp.ok{color:var(--ac)}.resp.bad{color:var(--bd)}
+.req .hint{font-family:"Segoe UI",system-ui,sans-serif;margin-top:6px}
+.duo{display:grid;grid-template-columns:226px 1fr;gap:12px;padding:10px 12px 4px}
+@container (max-width:500px){.duo{grid-template-columns:1fr}.phone{margin:0 auto}}
+.phone{width:226px;height:440px;border-radius:34px;background:#0b0e14;padding:9px;box-shadow:inset 0 0 0 2px #333c4e,0 10px 30px rgba(0,0,0,.3)}
+.scr{height:100%;border-radius:26px;background:#f3f5f9;color:#111;display:flex;flex-direction:column;overflow:hidden;font-family:system-ui,"Segoe UI",sans-serif}
+.sb{display:flex;justify-content:space-between;align-items:center;padding:9px 18px 3px;font:600 11px system-ui,sans-serif}
+.bat{display:inline-block;width:18px;height:9px;border:1.5px solid #111;border-radius:3px;margin-left:4px;vertical-align:-1px;background:linear-gradient(90deg,#111 70%,transparent 0) 1px 1px/14px 4px no-repeat}
+.ths{display:flex;gap:4px;overflow-x:auto;padding:4px 8px;border-bottom:1px solid #e1e5ec;flex:none}
+.ths button{font-size:10px;padding:2px 8px;border-radius:999px;background:#fff;color:#111;border-color:#cdd5e2;white-space:nowrap}.ths button.on{background:#1b2332;color:#fff;border-color:#1b2332}
+.thh{text-align:center;padding:4px 8px 6px;border-bottom:1px solid #e1e5ec;font-size:11px;flex:none}.thh b{display:block;font-size:12px}
+.thh .av{width:30px;height:30px;border-radius:50%;margin:0 auto 2px;background:#8f9bb0;color:#fff;font:600 12px/30px system-ui,sans-serif}
+.msgs{flex:1;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
+.ts{align-self:center;font-size:10px;color:#7d8798;margin:6px 0 2px}
+.bub{align-self:flex-start;max-width:86%;background:#e3e6ed;color:#111;border-radius:16px 16px 16px 4px;padding:6px 10px;font-size:12px;line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere}
+.bub u{color:#1d5fd0}
+.dl{align-self:flex-start;font-size:9.5px;color:#7d8798;margin-left:4px}
+.cmp{margin:6px 8px 10px;border:1px solid #cdd5e2;border-radius:999px;padding:5px 12px;font-size:11px;color:#9aa6b8;background:#fff;flex:none}
+.empty{color:#7d8798;font-size:11.5px;text-align:center;margin:auto;padding:12px;line-height:1.5}
+.new{animation:pop .3s ease-out}@keyframes pop{from{transform:scale(.9);opacity:0}}
+.mail{border:1px solid var(--ln);border-radius:10px;background:var(--bg);display:flex;flex-direction:column;height:440px;overflow:hidden;min-width:0}
+.mh{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--ln);font-weight:600;flex:none}.mh .n{margin-left:auto;font-size:11px;color:var(--mu);font-weight:400}.mh button{padding:2px 8px;font-size:12px;font-weight:400}
+.mail .ths{border-color:var(--ln)}.mail .ths button{background:var(--pn);color:var(--tx);border-color:var(--ln)}.mail .ths button.on{background:var(--tx);color:var(--bg)}
+.ml{flex:1;overflow:auto}
+.mr{display:grid;grid-template-columns:28px 1fr auto;gap:1px 8px;padding:8px 10px;border-bottom:1px solid var(--ln);cursor:pointer}
+.mr:hover,.mr:focus-visible{background:var(--pn)}
+.mr .av{grid-row:span 4;width:28px;height:28px;border-radius:50%;background:var(--ac);color:#06201a;font:600 12px/28px system-ui,sans-serif;text-align:center}
+.mr .f,.mr .s,.mr .p{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.mr .f{font-size:12px}.mr .t{font-size:10.5px;color:var(--mu)}.mr .s{grid-column:2/4;font-size:12px}.mr .p{grid-column:2/4;font-size:11px;color:var(--mu)}
+.mr.unread .f,.mr.unread .s{font-weight:700}
+.mr .to{grid-column:2/4;font-size:10.5px;color:var(--mu)}
+.tagx{font-size:9.5px;border:1px solid var(--ln);border-radius:4px;padding:0 4px;margin-left:4px}
+.mv{flex:1;overflow:auto;padding:10px 12px;font-size:12.5px}
+.mv h5{font-size:15px;margin:2px 0 8px}.mv .meta{font-size:11.5px;color:var(--mu);line-height:1.6;border-bottom:1px solid var(--ln);padding-bottom:8px;margin-bottom:10px}.mv .meta b{color:var(--tx)}
+.mv .body{white-space:pre-wrap;line-height:1.55;overflow-wrap:anywhere}.mv u{color:var(--ac)}
+.crm{border:1px solid var(--ln);border-radius:10px;background:var(--bg);margin-bottom:14px}
+.ch{display:flex;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--ln)}
+.ch .av{width:38px;height:38px;border-radius:50%;background:var(--tr);color:#2a1a00;font:600 14px/38px system-ui,sans-serif;text-align:center;flex:none}
+.ch .nm{font-weight:600}.ch .ci{font-size:11.5px;color:var(--mu);overflow-wrap:anywhere}
+.dnd{margin-left:auto;font-size:10px;color:var(--bd);border:1px solid var(--bd);border-radius:4px;padding:1px 6px;white-space:nowrap}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--ln)}
+@container (max-width:440px){.cgrid{grid-template-columns:1fr}.cgrid .cb+.cb{border-left:0;border-top:1px solid var(--ln)}}
+.cb{padding:8px 12px 10px;min-width:0}.cgrid .cb+.cb{border-left:1px solid var(--ln)}
+#sim .cb h4{margin-top:4px}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-size:11px;padding:1px 8px;border-radius:999px;background:color-mix(in srgb,var(--ac) 18%,transparent);border:1px solid color-mix(in srgb,var(--ac) 45%,transparent)}
+.chip.gone{text-decoration:line-through;opacity:.55}
+.kv{font-size:11.5px;display:grid;grid-template-columns:auto 1fr;gap:2px 10px}.kv span{overflow-wrap:anywhere}.kv span:nth-child(odd){color:var(--mu)}.kv .fresh{color:var(--ac);font-weight:600}
+.act{list-style:none;margin:0;padding:0;font-size:11.5px;max-height:240px;overflow:auto}
+.act li{display:grid;grid-template-columns:64px 58px 1fr;gap:6px;padding:4px 0;border-bottom:1px dashed var(--ln)}
+.act .tm{color:var(--mu);font-size:10.5px;padding-top:1px}
+.act .k{font:700 9px/1.6 system-ui,sans-serif;letter-spacing:.04em;text-align:center;border-radius:4px;align-self:start;background:var(--ln);color:var(--tx)}
+.k.sms{background:var(--sms);color:#fff}.k.email{background:var(--ac);color:#06201a}.k.trig{background:var(--tr);color:#2a1a00}.k.if{background:var(--lg);color:#fff}
+.k.err{background:var(--bd);color:#fff}.k.skip{background:transparent;border:1px solid var(--tr);color:var(--tr)}
+@media(max-width:1280px){body.simon{grid-template-columns:minmax(0,1fr)}body.simon #sim{position:fixed;right:0;top:var(--hh,52px);bottom:0;width:min(520px,100%);z-index:30;box-shadow:-12px 0 30px rgba(0,0,0,.35)}}
+@media(max-width:800px){main,body.simon main{grid-template-columns:120px 1fr}#ins{display:none}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+#docs{position:fixed;inset:0;z-index:50;background:var(--bg);display:none;grid-template-rows:auto 1fr}#docs.on{display:grid}
+.dh{display:flex;gap:10px;align-items:center;padding:8px 14px;background:var(--pn);border-bottom:1px solid var(--ln);flex-wrap:wrap}.dh b{font:600 16px Georgia,serif}#dtabs{display:flex;gap:4px;flex:1;flex-wrap:wrap}#dtabs button.on{border-color:var(--ac);color:var(--ac)}
+#dc{overflow:auto;padding:12px 24px 70px}#dc>div{max-width:900px;margin:0 auto;line-height:1.55}
+#dc h2{font:600 20px Georgia,serif;margin:28px 0 6px;border-bottom:1px solid var(--ln);padding-bottom:4px}#dc h3{font-size:14px;margin:18px 0 4px}
+#dc code{font:12.5px ui-monospace,Consolas,monospace;background:var(--pn);border:1px solid var(--ln);border-radius:4px;padding:0 4px}
+#dc table{border-collapse:collapse;width:100%;margin:8px 0;font-size:13px}#dc th,#dc td{border:1px solid var(--ln);padding:5px 8px;text-align:left;vertical-align:top}#dc th{background:var(--pn)}
+#dc pre{background:var(--pn);border:1px solid var(--ln);border-radius:6px;padding:8px 10px;overflow:auto;font:12px/1.5 ui-monospace,Consolas,monospace;white-space:pre}
+.tg{border-left:4px solid var(--tr);background:var(--bg);padding:8px 10px;margin:10px 0;font-size:12px;line-height:1.5;border-radius:0 6px 6px 0}
+svg.lg{width:30px;height:30px;flex:none}
+#abt{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:16px}#abt.on{display:flex}
+#abt .box{background:var(--pn);border:1px solid var(--ln);border-radius:10px;max-width:640px;max-height:90vh;overflow:auto;padding:18px 22px;font-size:13px;line-height:1.55}
+#abt .lgrow{display:flex;align-items:center;gap:10px;font:600 20px Georgia,serif;margin-bottom:8px}#abt p{margin:8px 0}
+.note{border-left:4px solid var(--tr);background:var(--pn);padding:8px 12px;margin:10px 0;border-radius:0 6px 6px 0}
+</style></head><body>
+<header>
+<svg class="lg" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#10141c"/><path d="M16 32C28 32 28 18 46 18M16 32C28 32 28 46 46 46" stroke="#3dd6b0" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="16" cy="32" r="7" fill="#f2b84b"/><circle cx="46" cy="18" r="6" fill="#3dd6b0"/><circle cx="46" cy="46" r="6" fill="#3dd6b0"/></svg><h1>FlowLab</h1><button id="docb">Docs</button><button id="abb">About</button>
+<button class="go" id="run" title="Run with the trigger's sample data (Ctrl+Enter)">Run workflow</button>
+<select id="spd" title="How fast the test run plays" aria-label="Run speed"><option value="normal">Normal</option><option value="slow">Slow</option><option value="instant">Instant</option></select>
+<button id="simb" aria-pressed="false" title="Show the form, phone, inbox and contact record">Test panel</button>
+<select id="ex" title="Load a ready-made workflow"></select>
+<input id="gen" placeholder='Describe it: "when form submitted, if score greater than 50 and phone is not empty, add tag lead, wait 1 day, send sms Hi {{ $json.name }}"'>
+<button id="mk">Generate</button>
+<details class="menu" id="filem"><summary>File</summary><div class="mbox">
+<button id="exj">Export JSON</button><button id="imj">Import JSON</button><button id="exc">Download compiled .js</button><button id="exn">Export n8n JSON</button><hr><button id="clr">Clear canvas</button></div></details>
+</header>
+<main>
+<aside id="pal"></aside>
+<div class="cvw"><div id="cv"><div id="zw"><div id="world"><svg id="sv"></svg></div></div></div>
+<div class="zoom"><button id="zo" title="Zoom out" aria-label="Zoom out">−</button><button id="zr" title="Back to 100%">100%</button><button id="zi" title="Zoom in" aria-label="Zoom in">+</button><button id="zf" title="Fit the whole workflow">Fit</button></div></div>
+<aside id="ins"></aside>
+</main>
+<footer>
+<div class="tabs"><button data-t="log" class="on">Run log</button><button data-t="json">Workflow JSON</button><button data-t="code">Compiled code</button><button data-t="n8n">n8n JSON</button></div>
+<pre id="out"></pre>
+</footer>
+<aside id="sim" aria-label="Test run"></aside>
+<script>
+const VERSION='1.1.0';
+/* ---------- 1. Node catalogue: type -> label, fields, defaults ----------
+   n: name, t: trigger, g: logic (purple), c: has a condition editor,
+   f: inspector fields [key, label, textarea?, options], d: default settings */
+const LEAD='{"name":"Ada","email":"ada@example.com","phone":"+639171234567","score":72}';
+const T={
+ manual:{n:'Manual start',t:1,f:[['data','Starting data (JSON)',1]],d:{data:LEAD}},
+ form:{n:'Form submitted (GHL)',t:1,f:[['title','Form title'],['data','Sample submission (JSON)',1]],d:{title:'Request a free quote',data:LEAD}},
+ webhook:{n:'Webhook (n8n)',t:1,f:[['path','URL path (optional)'],['data','Sample body (JSON)',1]],d:{path:'',data:'{"event":"order.paid","amount":120}'}},
+ schedule:{n:'Schedule',t:1,f:[['cron','Cron rule (minute hour day month weekday)'],['data','Tick data (JSON)',1]],d:{cron:'0 9 * * *',data:'{"tick":1}'}},
+ if:{n:'IF',g:1,c:1,f:[],d:{comb:'and',ic:false,rules:[{l:'{{ $json.score }}',op:'num_gt',r:'50'}]}},
+ switch:{n:'Switch (branches)',g:1,c:1,f:[],d:{ic:false,all:false,fallback:true,routes:[{name:'Hot',comb:'and',rules:[{l:'{{ $json.score }}',op:'num_gte',r:'80'}]},{name:'Warm',comb:'and',rules:[{l:'{{ $json.score }}',op:'num_gte',r:'50'}]}]}},
+ set:{n:'Set field',g:1,f:[['key','Field name'],['value','Value']],d:{key:'status',value:'new'}},
+ code:{n:'Code (JS)',g:1,f:[['js','JavaScript – $json in, return an object',1]],d:{js:'return {...$json, upper: String($json.name).toUpperCase()};'}},
+ wait:{n:'Wait',g:1,f:[['amount','Wait for'],['unit','Unit',0,['seconds','minutes','hours','days']]],d:{amount:'1',unit:'days'}},
+ sms:{n:'Send SMS',f:[['to','To'],['from','From number'],['body','Message',1]],d:{to:'{{ $json.phone }}',from:'+15550100200',body:'Hi {{ $json.name }}!'}},
+ email:{n:'Send email',f:[['to','To'],['from','From'],['subj','Subject'],['body','Body',1]],d:{to:'{{ $json.email }}',from:'Your Business <hello@yourbusiness.com>',subj:'Welcome',body:'Hi {{ $json.name }}, thanks for signing up.'}},
+ tag:{n:'Add tag (GHL)',f:[['tag','Tag']],d:{tag:'new-lead'}},
+ untag:{n:'Remove tag (GHL)',f:[['tag','Tag']],d:{tag:'nurture'}},
+ http:{n:'HTTP request',f:[['url','URL'],['method','Method',0,['GET','POST']]],d:{url:'https://api.github.com/zen',method:'GET'}},
+ log:{n:'Log',f:[],d:{}}
+};
+const TG={
+ code:['Runs your own JavaScript on the data coming in, for logic the other nodes cannot do (scoring, math, text, dates).','Read the incoming data with <code>$json</code>, then <code>return</code> an object. Copy the old fields with <code>{...$json}</code> and add new ones, e.g. <code>return {...$json, total: $json.price * 2};</code>. A mistake turns the node red and the log shows the error.','Not typed here. <code>$json</code> is the output of the previous node, and whatever you return becomes the next node\'s <code>$json</code>.'],
+ manual:['Starts the workflow only when you press Run.','Edit the starting data (JSON), connect it to your first step, then press <b>Run workflow</b>.','From you. You type it in the data box above; nothing else supplies it.'],
+ form:['Starts when someone submits a form. The data is what they typed.','Write a sample submission using your form\'s field names. In the <b>Test panel</b> the sample becomes a real form: change the values and press <b>Submit</b> to test. Read values later with <code>{{ $json.name }}</code>.','In real life, from the form itself: every field the person filled in becomes a key (<code>name</code>, <code>email</code>, ...). Here it is the sample you typed, standing in for a real submission.'],
+ webhook:['Starts when another app sends data to your flow\'s web address (a payment, booking or order).','Paste a sample of what the app sends as the body. In the <b>Test panel</b> you can edit the request body and press <b>Send request</b>. Real calls need the compiled script (<code>--serve</code>) or n8n.','From the other app\'s request: it sends JSON in the body of its call. Here it is the sample you typed. Check that app\'s documentation for the exact shape.'],
+ schedule:['Starts on a clock, such as every day at 9 AM. It carries no data of its own.','Connect a step that fetches the data (HTTP or Code), then act on it. Run simulates one tick; use cron or n8n for real timing.','Nowhere. A clock tick has no data, so this JSON is only a placeholder. Real data has to be fetched by a later step (HTTP or Code).']};
+let S={nodes:[],edges:[]},sel=null,seq=1;
+const $=s=>document.querySelector(s);
+const clone=o=>JSON.parse(JSON.stringify(o));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const UNIT={seconds:1,minutes:60,hours:3600,days:86400};
+const outs=n=>n.type=='if'?2:n.type=='switch'?n.p.routes.length+(n.p.fallback?1:0):1;
+const outNames=n=>n.type=='if'?['true','false']:n.type=='switch'?[...n.p.routes.map((r,i)=>r.name||'Branch '+(i+1)),...(n.p.fallback?['None']:[])]:[''];
+const store={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+
+/* ---------- 2. Expressions: "{{ $json.name }}" ---------- */
+const evalExpr=(e,j)=>new Function('$json','return ('+e+')')(j);
+// Text with {{ }} inside -> a string. Missing values become '' and are reported in `miss`.
+function tpl(s,j,miss){return String(s??'').replace(/\{\{(.+?)\}\}/g,(m,e)=>{let v;try{v=evalExpr(e,j)}catch(x){v=undefined}
+ if(v==null||v===''){if(miss)miss.push(e.trim());return''}return typeof v=='object'?JSON.stringify(v):String(v)})}
+// A value that is ONLY one {{ }} keeps its real type (number, list, true/false), the way n8n does.
+const SOLO=/^\s*\{\{((?:(?!\}\}).)+)\}\}\s*$/;
+function val(s,j,miss){const m=String(s??'').match(SOLO);if(!m)return tpl(s,j,miss);try{return evalExpr(m[1],j)}catch(x){return undefined}}
+
+/* ---------- 3. Conditions: operators and the rule tester ----------
+   [id, label, group, unary, n8n type, n8n operation, GoHighLevel (closest), short form] */
+const OPS=[
+ ['str_eq','is equal to','Text',0,'string','equals','Is','='],
+ ['str_ne','is not equal to','Text',0,'string','notEquals','Is not','≠'],
+ ['str_has','contains','Text',0,'string','contains','Contains (text fields)','contains'],
+ ['str_nhas','does not contain','Text',0,'string','notContains','Does not contain','lacks'],
+ ['str_sw','starts with','Text',0,'string','startsWith','Starts with (if offered)','starts'],
+ ['str_ew','ends with','Text',0,'string','endsWith','Ends with (if offered)','ends'],
+ ['str_re','matches regex','Text',0,'string','regex','none: use Custom Code','~'],
+ ['num_eq','is equal to','Number',0,'number','equals','Is','='],
+ ['num_ne','is not equal to','Number',0,'number','notEquals','Is not','≠'],
+ ['num_gt','is greater than','Number',0,'number','gt','Greater than (number fields)','>'],
+ ['num_lt','is less than','Number',0,'number','lt','Less than (number fields)','<'],
+ ['num_gte','is greater than or equal to','Number',0,'number','gte','check your account','≥'],
+ ['num_lte','is less than or equal to','Number',0,'number','lte','check your account','≤'],
+ ['date_after','is after','Date & time',0,'dateTime','after','Is after','after'],
+ ['date_before','is before','Date & time',0,'dateTime','before','Is before','before'],
+ ['bool_true','is true','True / false',1,'boolean','true','Is (yes / checked)','is true'],
+ ['bool_false','is false','True / false',1,'boolean','false','Is not','is false'],
+ ['arr_has','contains item (has tag)','List / tags',0,'array','contains','Includes (tags)','has'],
+ ['arr_nhas','does not contain item','List / tags',0,'array','notContains','Does not include (tags)','lacks'],
+ ['arr_len_gt','has more items than','List / tags',0,'array','lengthGt','none','count >'],
+ ['arr_empty','is empty','List / tags',1,'array','empty','Is empty','no items'],
+ ['arr_nempty','is not empty','List / tags',1,'array','notEmpty','Is not empty','has items'],
+ ['exists','exists','Any value',1,'string','exists','none: use Is not empty','exists'],
+ ['nexists','does not exist','Any value',1,'string','notExists','none: use Is empty','missing'],
+ ['empty','is empty','Any value',1,'string','empty','Is empty','is empty'],
+ ['nempty','is not empty','Any value',1,'string','notEmpty','Is not empty','not empty']];
+const OP=Object.fromEntries(OPS.map(o=>[o[0],{id:o[0],label:o[1],g:o[2],u:!!o[3],nt:o[4],no:o[5],ghl:o[6],s:o[7]}]));
+const N8T={string:'String',number:'Number',dateTime:'Date & Time',boolean:'Boolean',array:'Array'};
+const N8L={equals:'is equal to',notEquals:'is not equal to',contains:'contains',notContains:'does not contain',startsWith:'starts with',endsWith:'ends with',regex:'matches regex',gt:'is greater than',lt:'is less than',gte:'is greater than or equal to',lte:'is less than or equal to',after:'is after',before:'is before',true:'is true',false:'is false',lengthGt:'length greater than',empty:'is empty',notEmpty:'is not empty',exists:'exists',notExists:'does not exist'};
+
+// One condition. Copies n8n's IF/Switch with "Convert types where required" turned on.
+// l, r = left and right values, ic = ignore case, i = condition number (for error messages).
+// This exact function is also copied into the compiled script.
+function testRule(l, op, r, ic, i) {
+  const fail = (v, type) => { throw new Error('Conversion error: the ' + typeof v + " '" + (typeof v == 'object' ? JSON.stringify(v) : v) + "' can't be converted to " + type + ' [condition ' + i + ']') };
+  const has = v => v !== undefined && v !== null && !Number.isNaN(v);
+  const str = v => v == null ? '' : typeof v == 'object' ? JSON.stringify(v) : String(v);
+  const low = s => ic ? s.toLowerCase() : s;
+  const num = v => { if (!has(v) || (typeof v == 'string' && !v.trim())) return null; const n = Number(v); if (typeof v == 'object' || Number.isNaN(n)) fail(v, 'a number'); return n };
+  const date = v => { if (!has(v) || v === '') return null; const d = v instanceof Date ? v : new Date(typeof v == 'number' ? v : String(v).trim()); if (isNaN(d)) fail(v, 'a date'); return d.getTime() };
+  const bool = v => { if (typeof v == 'boolean') return v; if (!has(v)) return undefined; const s = String(v).trim().toLowerCase(); if (s == 'true') return true; if (s == 'false') return false; if (s !== '' && Number(s) === 1) return true; if (s !== '' && Number(s) === 0) return false; return Boolean(v) };
+  const list = v => { if (!has(v)) return []; if (Array.isArray(v)) return v; try { const a = JSON.parse(String(v)); if (Array.isArray(a)) return a } catch (e) {} fail(v, 'an array (list)') };
+  const L = low(str(l)), R = low(str(r));
+  switch (op) {
+    case 'exists': return has(l);
+    case 'nexists': return !has(l);
+    case 'empty': return str(l).length === 0;
+    case 'nempty': return str(l).length !== 0;
+    case 'str_eq': return L === R;
+    case 'str_ne': return L !== R;
+    case 'str_has': return L.includes(R);
+    case 'str_nhas': return !L.includes(R);
+    case 'str_sw': return L.startsWith(R);
+    case 'str_ew': return L.endsWith(R);
+    case 'str_re': { const m = str(r).match(/^\/(.*)\/([gimsuy]*)$/); return (m ? new RegExp(m[1], m[2]) : new RegExp(str(r))).test(L) }
+    case 'num_eq': case 'num_ne': case 'num_gt': case 'num_lt': case 'num_gte': case 'num_lte': {
+      const a = num(l), b = num(r);
+      if (a === null || b === null) return op == 'num_eq' ? a === b : op == 'num_ne' ? a !== b : false;
+      return op == 'num_eq' ? a === b : op == 'num_ne' ? a !== b : op == 'num_gt' ? a > b : op == 'num_lt' ? a < b : op == 'num_gte' ? a >= b : a <= b }
+    case 'date_after': case 'date_before': { const a = date(l), b = date(r); if (a === null || b === null) return false; return op == 'date_after' ? a > b : a < b }
+    case 'bool_true': return bool(l) === true;
+    case 'bool_false': return !bool(l);
+    case 'arr_has': case 'arr_nhas': { const hit = list(l).some(x => ic && typeof x == 'string' && typeof r == 'string' ? x.toLowerCase() === r.toLowerCase() : x === r); return op == 'arr_has' ? hit : !hit }
+    case 'arr_len_gt': return list(l).length > (num(r) ?? 0);
+    case 'arr_empty': return list(l).length === 0;
+    case 'arr_nempty': return list(l).length !== 0;
+  }
+  throw new Error('Unknown operator ' + op);
+}
+
+/* ---------- 4. Realistic sending rules (shared with the compiled script) ---------- */
+function phoneErr(to) {
+  const s = String(to ?? '').replace(/[\s().-]/g, '');
+  if (!s) return "Invalid 'To' phone number: it is empty. Does the contact have a phone number?";
+  if (!/^\+[1-9]\d{7,14}$/.test(s)) return "Invalid 'To' phone number '" + to + "'. Use international (E.164) format with country code, e.g. +639171234567";
+  return '';
+}
+function emailErr(to) {
+  const a = String(to ?? '').trim().replace(/^.*<(.+)>$/, '$1');
+  if (!a) return 'Invalid recipient: the "To" address is empty. Does the contact have an email?';
+  if (!/^[^\s@<>,]+@[^\s@<>,]+\.[^\s@<>,]+$/.test(a)) return 'Invalid recipient address "' + to + '"';
+  return '';
+}
+// SMS are billed per segment: 160 plain characters (153 each when split), or 70 when the text
+// needs Unicode, e.g. an emoji (67 each when split).
+function segments(body) {
+  const GSM = '@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&\'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà', EXT = '^{}\\[~]|€';
+  let len = 0, uni = false;
+  for (const ch of String(body)) { if (GSM.includes(ch)) len++; else if (EXT.includes(ch)) len += 2; else { uni = true; break } }
+  if (uni) len = String(body).length;
+  const n = uni ? (len <= 70 ? 1 : Math.ceil(len / 67)) : (len <= 160 ? 1 : Math.ceil(len / 153));
+  return { n, len, uni };
+}
+// Form fields built from the sample data (used by the Test panel and by "node workflow.js --serve").
+function formFields(sample) {
+  const out = [];
+  for (const [key, v] of Object.entries(sample || {})) {
+    if (v && typeof v == 'object' && !Array.isArray(v)) continue;
+    const label = key == 'dnd' ? 'Do not disturb (DND)' : key.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, c => c.toUpperCase()).replace(/\bsms\b/gi, 'SMS');
+    const type = typeof v == 'boolean' ? 'checkbox' : typeof v == 'number' ? 'number' : /e-?mail/i.test(key) ? 'email' : /phone|mobile|tel/i.test(key) ? 'tel' : 'text';
+    out.push({ key, label: Array.isArray(v) ? label + ' (comma separated)' : label, type, value: Array.isArray(v) ? v.join(', ') : v });
+  }
+  return out;
+}
+// Turns what was typed back into data with the same types as the sample.
+function fromFields(sample, get) {
+  const out = {};
+  for (const [key, v] of Object.entries(sample || {})) {
+    const x = get(key, typeof v == 'boolean' ? 'checkbox' : 'text');
+    if (x === undefined || (v && typeof v == 'object' && !Array.isArray(v))) { out[key] = v; continue }
+    if (typeof v == 'boolean') out[key] = x === true || x === 'on' || x === 'true';
+    else if (typeof v == 'number') out[key] = String(x).trim() === '' ? '' : isNaN(Number(x)) ? String(x) : Number(x);
+    else if (Array.isArray(v)) out[key] = String(x).split(',').map(s => s.trim()).filter(Boolean);
+    else out[key] = String(x);
+  }
+  return out;
+}
+const isDnd=j=>j!=null&&(j.dnd===true||String(j.dnd).toLowerCase()==='true');
+const listOf=v=>Array.isArray(v)?v:v==null||v===''?[]:[v];
+function dur(s){const[n,u]=s&&s%86400==0?[s/86400,'day']:s&&s%3600==0?[s/3600,'hour']:s&&s%60==0?[s/60,'minute']:[s,'second'];return n+' '+u+(n==1?'':'s')}
+const short=s=>{const m=String(s??'').match(SOLO);return m?m[1].trim().replace(/^\$json\./,''):String(s??'')};
+const ruleText=g=>g.rules.map(r=>short(r.l)+' '+(OP[r.op]?OP[r.op].s:r.op)+(OP[r.op]&&OP[r.op].u?'':' '+r.r)).join(g.comb=='or'?' OR ':' AND ');
+const fmtV=v=>v===undefined?'(missing)':typeof v=='string'?JSON.stringify(v):JSON.stringify(v);
+
+/* ---------- 5. Interpreter: runs the graph in the browser ---------- */
+// c = run context: log(), warn(), miss (empty template fields), my (run id)
+function group(g,j,c,ic,label){
+ const and=g.comb!='or';let res=and;
+ if(!g.rules.length)c.warn((label||'')+'no conditions, so this is always '+and);
+ c.log('  '+(label||'')+'checking '+g.rules.length+' condition'+(g.rules.length==1?'':'s')+(g.rules.length>1?' ('+(and?'AND: all must be true':'OR: one is enough')+')':''));
+ g.rules.forEach((ru,i)=>{
+  if(and?!res:res){c.log('    '+(i+1)+'. not checked: the answer is already '+res);return}
+  const o=OP[ru.op];if(!o)throw new Error('Unknown operator '+ru.op);
+  const l=val(ru.l,j),r=o.u?undefined:val(ru.r,j);
+  const v=testRule(l,ru.op,r,ic,i);
+  const rs=o.nt=='number'&&typeof r=='string'&&r.trim()!==''&&!isNaN(Number(r))?r:fmtV(r);
+  c.log('    '+(i+1)+'. '+short(ru.l)+' = '+fmtV(l)+'  '+o.g.toLowerCase()+' '+o.label+(o.u?'':' '+rs)+'  →  '+v);
+  const blank=l==null||l==='';
+  if(blank&&/^(num|date)/.test(ru.op))c.warn(short(ru.l)+' is empty or missing, so "'+o.label+'" is false. Check the field name.');
+  if(/^bool/.test(ru.op)&&typeof l=='string'&&!/^(true|false|1|0|)$/i.test(l.trim()))c.warn('"'+l+'" is not true/false. n8n counts any non-empty text as true, so "no" is true. Use Text → is equal to instead.');
+  if(/^n?empty$/.test(ru.op)&&Array.isArray(l))c.warn(short(ru.l)+' is a list. As text, an empty list "[]" is not empty: use List / tags → is empty.');
+  if(/^str_(eq|ne)$/.test(ru.op)&&!ic&&typeof l=='string'&&typeof r=='string'&&l!==r&&l.toLowerCase()===r.toLowerCase())c.warn('"'+l+'" and "'+r+'" differ only in letter case. Tick "Ignore case" if they should match.');
+  res=v});
+ return res}
+
+async function exec(n,j,c){
+ const p=n.p,t=s=>tpl(s,j,c.miss);
+ switch(n.type){
+  case'manual':case'form':case'webhook':case'schedule':return[j];
+  case'set':{const k=t(p.key);if(!k)throw new Error('Field name is empty');const v=val(p.value,j,c.miss);c.act('set','Field '+k+' = '+(typeof v=='object'?JSON.stringify(v):v));return[{...j,[k]:v}]}
+  case'if':{const ok=group(p,j,c,p.ic);c.log('  → takes the "'+(ok?'true':'false')+'" output');c.act('if','IF → '+ok+' ('+ruleText(p).slice(0,60)+')');return ok?[j,null]:[null,j]}
+  case'switch':{const out=Array(outs(n)).fill(null),names=outNames(n);let hit=false;
+   p.routes.forEach((rt,i)=>{if(hit&&!p.all){c.log('  Branch "'+names[i]+'": not checked (first match already found)');return}
+    if(group(rt,j,c,p.ic,'Branch "'+names[i]+'": ')){out[i]=j;hit=true}});
+   if(!hit&&p.fallback)out[p.routes.length]=j;
+   const took=names.filter((_,i)=>out[i]!=null);
+   c.log('  → '+(took.length?'goes to: '+took.join(', '):'no branch matched and there is no None branch, so the run ends here'));
+   c.act('if','Switch → '+(took.join(' + ')||'no branch'));return out}
+  case'code':{const r=await new Function('$json','return (async()=>{'+p.js+'})()')(j);
+   if(!r||typeof r!='object'||Array.isArray(r))throw new Error('Code must return an object, for example: return {...$json, total: 5};');return[r]}
+  case'wait':{const s=Math.max(0,(Number(p.amount)||0)*(UNIT[p.unit]||1));c.log('  waiting '+dur(s)+' (simulated: the clock jumps ahead)');await c.wait(s);return[j]}
+  case'sms':{const to=t(p.to),from=t(p.from)||T.sms.d.from,body=t(p.body);
+   if(isDnd(j)){c.warn('Skipped: the contact has Do Not Disturb on, so a real CRM would not send this SMS.');c.act('skip','SMS not sent: DND is on');return[j]}
+   const e=phoneErr(to);if(e)throw new Error(e);if(!body.trim())throw new Error('Message body is empty');
+   const sg=segments(body);c.log('  SMS from '+from+' to '+to+' · '+sg.n+' segment'+(sg.n>1?'s':'')+', '+sg.len+' chars'+(sg.uni?' (Unicode)':'')+'\n  "'+body+'"');
+   c.sms({to,from,body,sg});return[{...j,smsSent:true}]}
+  case'email':{const to=t(p.to),from=t(p.from)||T.email.d.from,subj=t(p.subj),body=t(p.body);
+   if(isDnd(j)){c.warn('Skipped: the contact has Do Not Disturb on, so a real CRM would not send this email.');c.act('skip','Email not sent: DND is on');return[j]}
+   const e=emailErr(to);if(e)throw new Error(e);if(!subj.trim())c.warn('The subject is empty. Many inboxes treat that as spam.');
+   c.log('  EMAIL from '+from+' to '+to+'\n  subject: '+subj+'\n  '+body.replace(/\n/g,'\n  '));
+   c.email({to,from,subj,body});return[{...j,emailSent:true}]}
+  case'tag':case'untag':{const g=t(p.tag).trim(),had=listOf(j.tags);if(!g)throw new Error('Tag name is empty');
+   if(n.type=='tag'){if(had.includes(g)){c.log('  contact already has "'+g+'" (no duplicate)');return[j]}c.tag(g,true);c.log('  tag added: '+g);return[{...j,tags:[...had,g]}]}
+   if(!had.includes(g)){c.log('  contact did not have "'+g+'"');return[j]}c.tag(g,false);c.log('  tag removed: '+g);return[{...j,tags:had.filter(x=>x!==g)}]}
+  case'http':{const url=t(p.url);c.log('  '+p.method+' '+url);const r=await fetch(url,{method:p.method});const tx=await r.text();let x;try{x=JSON.parse(tx)}catch{x=tx}
+   c.log('  ← '+r.status+' '+r.statusText);c.act('http',p.method+' '+url.replace(/^https?:\/\//,'')+' → '+r.status);
+   if(!r.ok)throw new Error('The server answered '+r.status+' '+r.statusText+'. n8n stops here too unless the node is set to continue on error.');return[{...j,response:x}]}
+  default:c.log('  '+JSON.stringify(j));c.act('log','Logged the data');return[j];
+ }
+}
+
+let LOG='Press "Run workflow" to execute.',RUN=0,last={},hot=new Set(),ran=false,speed=store.get('flowlab_speed')||'normal';
+const SPD={instant:0,normal:420,slow:1100};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function run(input,o={}){
+ const my=++RUN,lines=[],L=m=>{if(my!==RUN)return;lines.push(m);LOG=lines.join('\n');const e=$('#out');if(cur=='log'){e.textContent=LOG;e.scrollTop=e.scrollHeight}};
+ tab('log');last={};hot=new Set();ran=true;
+ document.querySelectorAll('.nd').forEach(e=>e.classList.remove('ok','er','wn','run'));edges();
+ const start=S.nodes.find(n=>T[n.type].t);if(!start){L('Add a trigger node first (amber).');return}
+ let data=input;
+ if(data===undefined){try{data=JSON.parse(start.p.data||'{}')}catch(e){L('ERROR: the sample JSON in "'+T[start.type].n+'" is not valid JSON: '+e.message);last[start.id]={input:null,error:'Sample JSON is not valid: '+e.message,warns:[],at:Date.now(),st:'er'};draw();return}}
+ if(!data||typeof data!='object'||Array.isArray(data)){L('ERROR: the starting data must be a JSON object like {"name":"Ada"}');return}
+ simShow(true);simReset(start,data,o.keep);
+ L('Execution started '+stamp(SM.t)+' · trigger: '+T[start.type].n+(speed=='instant'?'':' · speed: '+speed));
+ const walk=async(id,j,depth)=>{
+  if(my!==RUN)return;if(depth>60){L('Stopped: loop detected');return}
+  const n=S.nodes.find(x=>x.id==id);if(!n)return;
+  let el=document.getElementById(id);if(el){el.classList.remove('ok','er','wn');el.classList.add('run');follow(n)}
+  if(SPD[speed])await sleep(SPD[speed]);if(my!==RUN)return;
+  L('▶ '+T[n.type].n+'   ['+stamp(SM.t)+']');
+  const live=f=>(...a)=>my===RUN?f(...a):undefined;
+  const c={log:L,miss:[],warns:[],my,act:live(simAct),sms:live(simSms),email:live(simEmail),tag:live(simTag),wait:s=>simWait(s,my)};c.warn=m=>{c.warns.push(m);L('  ⚠ '+m)};
+  let out;
+  try{out=await exec(n,j,c)}
+  catch(x){if(my!==RUN)return;last[id]={input:j,error:x.message,warns:c.warns,at:SM.t,st:'er'};el=document.getElementById(id);if(el){el.classList.remove('run');el.classList.add('er')}
+   L('  ✖ ERROR: '+x.message);simAct('err',T[n.type].n+': '+x.message);if(sel==id)inspect();return}
+  if(my!==RUN)return;
+  [...new Set(c.miss)].forEach(k=>c.warn('{{ '+k+' }} was empty, so it was left blank. Check the field name and the data.'));
+  const st=c.warns.length?'wn':'ok';last[id]={input:j,output:out,warns:c.warns,at:SM.t,st};
+  el=document.getElementById(id);if(el){el.classList.remove('run');el.classList.add(st)}
+  const first=out.find(v=>v!=null);if(first!==undefined){L('  data: '+JSON.stringify(first));simData(first)}
+  if(sel==id)inspect();
+  for(const [i,e] of S.edges.entries())if(e.from==id&&out[e.port]!=null){hot.add(i);edges();await walk(e.to,out[e.port],depth+1)}
+ };
+ await walk(start.id,data,0);
+ if(my===RUN)L('✔ Execution finished  ['+stamp(SM.t)+']');
+}
+
+/* ---------- 6. Compiler: graph -> standalone Node.js script ---------- */
+// Text with {{ }} -> a JavaScript template string. tx() turns a value into text (missing -> '').
+function q(s){const str=String(s??''),re=/\{\{(.+?)\}\}/g,lit=x=>x.replace(/\\/g,'\\\\').replace(/`/g,'\\`').replace(/\$\{/g,'\\${');let out='`',at=0,m;
+ while((m=re.exec(str))){out+=lit(str.slice(at,m.index))+'${tx(() => '+m[1].trim()+')}';at=re.lastIndex}return out+lit(str.slice(at))+'`'}
+// A value that is only one {{ }} keeps its type: val(() => $json.score)
+const qv=s=>{const m=String(s??'').match(SOLO);return m?'val(() => '+m[1].trim()+')':q(s)};
+const oneLine=s=>String(s).replace(/\s+/g,' ').replace(/\*\//g,'* /');
+const cg=(g,ic)=>'['+g.rules.map((r,i)=>`\n    () => testRule(${qv(r.l)}, ${JSON.stringify(r.op)}, ${OP[r.op]&&OP[r.op].u?'undefined':qv(r.r)}, ${!!ic}, ${i}),   // ${oneLine(short(r.l)+' '+(OP[r.op]?OP[r.op].label:r.op)+(OP[r.op]&&OP[r.op].u?'':' '+r.r))}`).join('')+`\n  ].${g.comb=='or'?'some':'every'}(check => check())`;
+const fid=id=>/^[A-Za-z_$][\w$]*$/.test(id)?id:'n_'+String(id).replace(/\W/g,'_');
+function body(n){const p=n.p;switch(n.type){
+ case'manual':case'form':case'webhook':case'schedule':return'return [$json];   // the trigger passes its data on';
+ case'set':return`return [{...$json, [${q(p.key)}]: ${qv(p.value)}}];`;
+ case'if':return`const pass = ${cg(p,p.ic)};\n  log('  IF → ' + pass);\n  return pass ? [$json, null] : [null, $json];   // [true output, false output]`;
+ case'switch':{const nm=outNames(n);let c=`const out = Array(${outs(n)}).fill(null);   // ${JSON.stringify(nm)}\n  let matched = false;\n`;
+  p.routes.forEach((rt,i)=>{c+=`  // Branch ${i+1}: ${oneLine(nm[i])}${p.all?'':' (only if nothing matched before)'}\n  if (${p.all?'':'!matched && '}${cg(rt,p.ic)}) { out[${i}] = $json; matched = true; }\n`});
+  if(p.fallback)c+=`  if (!matched) out[${p.routes.length}] = $json;   // the "None" branch\n`;
+  return c+`  log('  Switch → ' + (${JSON.stringify(nm)}.filter((name, i) => out[i]).join(', ') || 'no branch'));\n  return out;`}
+ case'code':return`const result = await (async () => {\n${p.js}\n  })();\n  if (!result || typeof result != 'object' || Array.isArray(result)) throw new Error('Code must return an object');\n  return [result];`;
+ case'wait':return`await wait(${Math.max(0,(Number(p.amount)||0)*(UNIT[p.unit]||1))});   // ${oneLine(p.amount+' '+p.unit)}\n  return [$json];`;
+ case'sms':return`if (isDnd($json)) { log('  skipped: the contact has Do Not Disturb on'); return [$json]; }\n  sendSms(${q(p.to)}, ${q(p.from)}, ${q(p.body)});\n  return [{...$json, smsSent: true}];`;
+ case'email':return`if (isDnd($json)) { log('  skipped: the contact has Do Not Disturb on'); return [$json]; }\n  sendEmail(${q(p.to)}, ${q(p.from)}, ${q(p.subj)}, ${q(p.body)});\n  return [{...$json, emailSent: true}];`;
+ case'tag':return`const tags = listOf($json.tags), tag = ${q(p.tag)};\n  if (tags.includes(tag)) return [$json];   // no duplicates\n  log('  tag added: ' + tag);\n  return [{...$json, tags: [...tags, tag]}];`;
+ case'untag':return`const tags = listOf($json.tags), tag = ${q(p.tag)};\n  if (tags.includes(tag)) log('  tag removed: ' + tag);\n  return [{...$json, tags: tags.filter(t => t !== tag)}];`;
+ case'http':return`const r = await fetch(${q(p.url)}, {method: ${JSON.stringify(p.method)}});\n  log('  ' + ${JSON.stringify(p.method)} + ' → ' + r.status);\n  if (!r.ok) throw new Error('The server answered ' + r.status);\n  const t = await r.text(); let d; try { d = JSON.parse(t) } catch { d = t }\n  return [{...$json, response: d}];`;
+ case'log':return`log('  ' + JSON.stringify($json));\n  return [$json];`;
+ default:return'return [$json];'}}
+
+/* The compiled script's runtime. It never runs inside FlowLab: compile() copies this text into workflow.js. */
+function __runtime(){
+  // ---------- Runtime: printing, waiting, command line and a tiny web server ----------
+  const args = process.argv.slice(2);
+  const FAST = args.includes('--fast');
+  const log = (...a) => console.log(...a);
+  const tx = f => { let v; try { v = f() } catch (e) { v = undefined } return v == null ? '' : typeof v == 'object' ? JSON.stringify(v) : String(v) };
+  const val = f => { try { return f() } catch (e) { return undefined } };
+  const listOf = v => Array.isArray(v) ? v : v == null || v === '' ? [] : [v];
+  const isDnd = j => j != null && (j.dnd === true || String(j.dnd).toLowerCase() === 'true');
+  const human = s => { const [n, u] = s && s % 86400 == 0 ? [s / 86400, 'day'] : s && s % 3600 == 0 ? [s / 3600, 'hour'] : s && s % 60 == 0 ? [s / 60, 'minute'] : [s, 'second']; return n + ' ' + u + (n == 1 ? '' : 's') };
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+
+  function box(kind, head, body, foot) {
+    const bar = '─'.repeat(46);
+    log('  ┌─ ' + kind + ' ' + bar.slice(kind.length + 1));
+    for (const [k, v] of head) log('  │ ' + (k + ':').padEnd(9) + v);
+    log('  │');
+    for (const line of String(body).split('\n')) log('  │ ' + line);
+    log('  └' + (foot ? '─ ' + foot : bar));
+  }
+  // Printed, not sent. Replace the box() call with your SMS provider's API to send for real.
+  function sendSms(to, from, body) {
+    const bad = phoneErr(to); if (bad) throw new Error(bad);
+    if (!body.trim()) throw new Error('Message body is empty');
+    const s = segments(body);
+    box('SMS', [['to', to], ['from', from]], body, s.n + ' segment' + (s.n > 1 ? 's' : '') + ', ' + s.len + ' characters' + (s.uni ? ' (Unicode)' : ''));
+  }
+  // Printed, not sent. Replace the box() call with your email provider (SMTP or API) to send for real.
+  function sendEmail(to, from, subject, body) {
+    const bad = emailErr(to); if (bad) throw new Error(bad);
+    box('EMAIL', [['to', to], ['from', from], ['subject', subject]], body);
+  }
+  async function wait(seconds) {
+    if (FAST) return log('  (--fast) skipped waiting ' + human(seconds));
+    log('  waiting ' + human(seconds) + ' (press Ctrl+C to stop, or run with --fast)');
+    let left = seconds * 1000;
+    while (left > 0) { const step = Math.min(left, 2147483647); await new Promise(r => setTimeout(r, step)); left -= step }   // timers max out at ~24 days
+  }
+  async function start(data) {
+    log('Execution started ' + new Date().toLocaleString());
+    await walk(START, data);
+    log('✔ Execution finished ' + new Date().toLocaleString());
+  }
+  function formPage(done) {
+    const f = formFields(SAMPLE).map(x => x.type == 'checkbox'
+      ? '<label class="c"><input type="checkbox" name="' + esc(x.key) + '"' + (x.value ? ' checked' : '') + '> ' + esc(x.label) + '</label>'
+      : '<label>' + esc(x.label) + '<input name="' + esc(x.key) + '" type="' + x.type + '" value="' + esc(x.value) + '"></label>').join('');
+    return '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(TRIGGER.title || 'Form') + '</title>'
+      + '<style>body{font:15px system-ui,sans-serif;background:#eef1f6;margin:0;padding:24px}form,.ok{max-width:420px;margin:auto;background:#fff;padding:20px 24px;border-radius:12px;box-shadow:0 8px 24px #0002}'
+      + 'h1{font:600 20px Georgia,serif;margin:0 0 10px}label{display:block;margin-top:10px;font-size:13px;color:#3a465c}input{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:8px;border:1px solid #cdd5e2;border-radius:6px;font:inherit}'
+      + 'label.c{display:flex;gap:8px;align-items:center}label.c input{width:auto;margin:0}button{margin-top:16px;width:100%;padding:10px;border:0;border-radius:6px;background:#0b9a79;color:#fff;font:600 15px system-ui}</style>'
+      + (done ? '<div class="ok"><h1>Thanks!</h1><p>Your form was received. Check the terminal to see what the workflow did.</p><p><a href="/">Send another</a></p></div>'
+        : '<form method="post" action="/submit"><h1>' + esc(TRIGGER.title || 'Contact us') + '</h1>' + f + '<button>Submit</button></form>');
+  }
+  function serve(port) {
+    if (TRIGGER.type == 'schedule') log('Note: this workflow starts on a schedule (' + TRIGGER.cron + '). Use cron or Task Scheduler to run it; --serve still accepts POST requests for testing.');
+    require('http').createServer((req, res) => {
+      let raw = '';
+      req.on('data', c => raw += c);
+      req.on('end', () => {
+        if (req.method == 'GET' && TRIGGER.type == 'form') { res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'}); return res.end(formPage(false)) }
+        if (req.method != 'POST') { res.writeHead(404, {'Content-Type': 'text/plain'}); return res.end('Send a POST request with a JSON body to /webhook') }
+        const isForm = /urlencoded/.test(req.headers['content-type'] || '');
+        let data;
+        try {
+          if (isForm) { const q = new URLSearchParams(raw); data = fromFields(SAMPLE, (k, type) => type == 'checkbox' ? q.has(k) : q.has(k) ? q.get(k) : undefined) }
+          else data = JSON.parse(raw || '{}');
+        } catch (e) { res.writeHead(400, {'Content-Type': 'application/json'}); return res.end(JSON.stringify({message: 'Body is not valid JSON'})) }
+        // Answer first, then run the steps (like n8n's "Respond: Immediately").
+        if (isForm) { res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'}); res.end(formPage(true)) }
+        else { res.writeHead(200, {'Content-Type': 'application/json'}); res.end(JSON.stringify({message: 'Workflow was started'})) }
+        start(data).catch(e => log('✖ ' + e.message));
+      });
+    }).listen(port, () => log('Listening on http://localhost:' + port + (TRIGGER.type == 'form' ? '  ← open this in your browser to fill in the form' : '') + '\nPOST JSON to http://localhost:' + port + '/webhook   (Ctrl+C to stop)'));
+  }
+
+  const di = args.indexOf('--data'), si = args.indexOf('--serve');
+  if (si >= 0) serve(Number(args[si + 1]) || 3000);
+  else {
+    let data = SAMPLE;
+    if (di >= 0) {
+      const v = args[di + 1] || '';
+      try { data = JSON.parse(/\.json$/i.test(v) ? require('fs').readFileSync(v, 'utf8') : v) }
+      catch (e) { console.error('--data must be JSON, e.g. --data \'{"name":"Bo"}\', or a .json file name. ' + e.message); process.exit(1) }
+    }
+    start(data).catch(e => { console.error(e); process.exitCode = 1 });
+  }
+}
+const fnBody=f=>{const s=f.toString();return s.slice(s.indexOf('{')+1,s.lastIndexOf('}')).replace(/^  /gm,'').trim()};
+function compile(){
+ const trig=S.nodes.find(n=>T[n.type].t);let sample={};try{sample=trig?JSON.parse(trig.p.data||'{}'):{}}catch(e){}
+ const tinfo=trig?{type:trig.type,title:trig.p.title||'',cron:trig.p.cron||'',path:trig.p.path||''}:{};
+ let c=`// Generated by FlowLab ${VERSION}. Needs Node.js 18 or newer.
+//
+//   node workflow.js                  run once with the sample data (Wait steps really wait)
+//   node workflow.js --fast           run once and skip the waiting (waits are only printed)
+//   node workflow.js --data data.json run once with your own data (a .json file or a JSON string)
+//   node workflow.js --serve 3000     keep running and listen for real events:${tinfo.type=='form'?'\n//                                     open http://localhost:3000 in a browser to fill in the form,':''}
+//                                     or POST JSON to http://localhost:3000/webhook
+//
+// SMS and email are printed, not sent. To send for real, change sendSms() and sendEmail() near
+// the bottom to call your provider, and only message people who agreed to receive messages.
+
+const SAMPLE = ${JSON.stringify(sample,null,2)};
+const TRIGGER = ${JSON.stringify(tinfo)};
+const START = ${JSON.stringify(trig?fid(trig.id):'')};
+
+// ---------- Conditions and sending rules: the same code FlowLab runs in the editor ----------
+${testRule.toString()}
+${phoneErr.toString()}
+${emailErr.toString()}
+${segments.toString()}
+${formFields.toString()}
+${fromFields.toString()}
+
+// ---------- One function per node ----------
+// Each gets the incoming data as $json and returns one value per output
+// (IF: [true, false]; Switch: one per branch, then None). null means nothing leaves that output.
+`;
+ S.nodes.forEach(n=>c+=`\n// ${T[n.type].n}${n.type=='if'||n.type=='switch'?'':': '+oneLine(subtitle(n)).slice(0,70)}\nasync function ${fid(n.id)}($json) {\n  ${body(n)}\n}\n`);
+ c+=`\nconst steps = { ${S.nodes.map(n=>fid(n.id)).join(', ')} };\nconst names = ${JSON.stringify(Object.fromEntries(S.nodes.map(n=>[fid(n.id),T[n.type].n])))};\nconst edges = ${JSON.stringify(S.edges.map(e=>[fid(e.from),e.port,fid(e.to)]))};   // [from, output, to]
+
+// The whole engine: run a node, then follow every connection from an output that produced data.
+async function walk(id, $json) {
+  log('▶ ' + names[id]);
+  let out;
+  try { out = await steps[id]($json) }
+  catch (e) { log('  ✖ ERROR: ' + e.message); return }   // this branch stops, like a red node in FlowLab
+  for (const [from, port, to] of edges)
+    if (from === id && out[port] != null) await walk(to, out[port]);
+}
+
+${fnBody(__runtime)}
+`;
+ return c}
+
+/* ---------- 7. Generator: plain English -> nodes ---------- */
+const PH=[[/^(?:contact\s+)?(?:has tag|is tagged|tagged)\s+(.+)$/i,'arr_has','tags'],[/^(?:contact\s+)?(?:does not have tag|doesn't have tag|not tagged)\s+(.+)$/i,'arr_nhas','tags'],
+ [/^([\w.]+)\s+(?:is\s+)?(?:greater than or equal to|>=|at least)\s+(.+)$/i,'num_gte'],[/^([\w.]+)\s+(?:is\s+)?(?:less than or equal to|<=|at most)\s+(.+)$/i,'num_lte'],
+ [/^([\w.]+)\s+(?:is\s+)?(?:greater than|more than|over|above|>)\s*(.+)$/i,'num_gt'],[/^([\w.]+)\s+(?:is\s+)?(?:less than|under|below|<)\s*(.+)$/i,'num_lt'],
+ [/^([\w.]+)\s+(?:is not empty|exists|is set|is filled in|is filled)$/i,'nempty'],[/^([\w.]+)\s+(?:is empty|is missing|is blank|does not exist)$/i,'empty'],
+ [/^([\w.]+)\s+is true$/i,'bool_true'],[/^([\w.]+)\s+is false$/i,'bool_false'],
+ [/^([\w.]+)\s+(?:does not contain|doesn't contain)\s+(.+)$/i,'str_nhas'],[/^([\w.]+)\s+contains\s+(.+)$/i,'str_has'],[/^([\w.]+)\s+starts with\s+(.+)$/i,'str_sw'],[/^([\w.]+)\s+ends with\s+(.+)$/i,'str_ew'],
+ [/^([\w.]+)\s+(?:is not|!=|not equals|does not equal)\s+(.+)$/i,'str_ne'],[/^([\w.]+)\s+(?:equals|is equal to|is|==|=)\s*(.+)$/i,'str_eq']];
+function genRule(s){const unq=x=>String(x).trim().replace(/^["']|["']$/g,'');for(const [re,op,fixed] of PH){const m=s.trim().match(re);if(!m)continue;
+ let o=op;const r=fixed?unq(m[1]):m[2]!==undefined?unq(m[2]):'';if((o=='str_eq'||o=='str_ne')&&/^-?\d+(\.\d+)?$/.test(r))o=o=='str_eq'?'num_eq':'num_ne';
+ return{l:'{{ $json.'+(fixed||m[1])+' }}',op:o,r}}return null}
+function gen(text){
+ const parts=text.split(/\s*(?:,|->|=>|\bthen\b|\bafter that\b)\s*/i).map(s=>s.trim()).filter(Boolean);
+ const out=[];const add=(type,p)=>out.push({type,p:{...clone(T[type].d),...p}});
+ for(const s0 of parts){const s=s0.toLowerCase();let m;
+  if(m=s0.match(/\bif\s+(.+)$/i)){const bits=m[1].split(/\s+(and|or)\s+/i),rules=[];let comb='and';
+   bits.forEach((b,i)=>{if(i%2){comb=b.toLowerCase();return}const r=genRule(b);if(r)rules.push(r)});if(rules.length)add('if',{comb,rules})}
+  else if(/form|submit/.test(s)&&/when|on|new/.test(s))add('form',{});
+  else if(/webhook/.test(s))add('webhook',{});
+  else if(/schedule|every|daily|hourly/.test(s))add('schedule',{});
+  else if(/manual|start/.test(s))add('manual',{});
+  else if(m=s0.match(/\b(?:remove|delete)\s+tag\s+["']?([\w-]+)/i))add('untag',{tag:m[1]});
+  else if(m=s0.match(/\btag\s+["']?([\w-]+)/i))add('tag',{tag:m[1]});
+  else if(/wait|delay/.test(s)){m=s.match(/(\d+)\s*(sec|min|hour|day|week)/);const u={sec:'seconds',min:'minutes',hour:'hours',day:'days',week:'days'};add('wait',m?{amount:String(m[2]=='week'?m[1]*7:m[1]),unit:u[m[2]]}:{})}
+  else if(/sms|text/.test(s)){m=s0.match(/(?:sms|text)\s+(.+)/i);add('sms',{body:m?m[1].replace(/^["']|["']$/g,''):'Hi {{ $json.name }}!'})}
+  else if(/email/.test(s)){m=s0.match(/email\s+(.+)/i);add('email',m?{body:m[1].replace(/^["']|["']$/g,'')}:{})}
+  else if(m=s0.match(/https?:\/\/\S+/))add('http',{url:m[0]});
+  else if(m=s0.match(/\bset\s+(\w+)\s+(?:to|=)\s+(.+)/i))add('set',{key:m[1],value:m[2]});
+  else if(/code|script/.test(s))add('code',{});
+  else if(/log/.test(s))add('log',{});}
+ if(!out.length)return false;
+ if(!T[out[0].type].t)out.unshift({type:'manual',p:clone(T.manual.d)});
+ S={nodes:[],edges:[]};seq=1;
+ out.forEach((o,i)=>{const id='n'+seq++;S.nodes.push({id,type:o.type,p:o.p,x:30+(i%5)*200,y:40+Math.floor(i/5)*140+(i%2)*30});if(i)S.edges.push({from:'n'+i,port:0,to:id})});
+ return true;
+}
+
+/* ---------- 8. UI: palette, canvas, inspector ---------- */
+function nextId(){let id;do id='n'+seq++;while(S.nodes.some(n=>n.id==id));return id}
+function palette(){let h='<h3>Triggers</h3>';
+ for(const k in T)if(T[k].t)h+=`<button class="pi2 t" data-a="${k}">${T[k].n}</button>`;
+ h+='<h3>Logic</h3>';for(const k in T)if(T[k].g)h+=`<button class="pi2 l" data-a="${k}">${T[k].n}</button>`;
+ h+='<h3>Actions</h3>';for(const k in T)if(!T[k].t&&!T[k].g)h+=`<button class="pi2" data-a="${k}">${T[k].n}</button>`;
+ $('#pal').innerHTML=h;
+ $('#pal').onclick=e=>{const a=e.target.dataset.a;if(!a)return;const id=nextId(),cv=$('#cv'),k=S.nodes.length%6;
+  S.nodes.push({id,type:a,p:clone(T[a].d),x:Math.round(cv.scrollLeft/Z)+60+k*30,y:Math.round(cv.scrollTop/Z)+60+k*30});sel=id;draw();inspect()}}
+const H=n=>{const o=outs(n);return o>1?Math.max(58,o*26+6):46};
+const portY=(n,i)=>{const o=outs(n);return o>1?H(n)/o*(i+.5):23};
+const outPos=(n,i)=>[n.x+160,n.y+portY(n,i)];
+function subtitle(n){const p=n.p;switch(n.type){
+ case'if':return ruleText(p)||'no conditions';case'switch':return p.routes.length+' branch'+(p.routes.length==1?'':'es')+(p.fallback?' + None':'')+(p.all?' · every match':'');
+ case'wait':return p.amount+' '+p.unit;case'form':return p.title||'';case'schedule':return p.cron+' · '+cronText(p.cron);
+ case'webhook':return'POST /'+(p.path||'flowlab-'+n.id);case'set':return p.key+' = '+p.value;
+ default:return p.tag||p.url||p.to||''}}
+function draw(){
+ const w=$('#world');w.querySelectorAll('.nd').forEach(e=>e.remove());
+ S.nodes.forEach(n=>{const d=T[n.type],e=document.createElement('div'),o=outs(n),nm=outNames(n);
+  e.className='nd'+(d.t?' t':d.g?' l':'')+(sel==n.id?' sel':'')+(last[n.id]?' '+last[n.id].st:'');e.id=n.id;e.style.cssText=`left:${n.x}px;top:${n.y}px;height:${H(n)}px`;
+  e.innerHTML=`<b>${esc(d.n)}</b><small>${esc(String(subtitle(n)).slice(0,48))}</small>`+(d.t?'':'<i class="pt pi" data-in="1"></i>')+
+   Array.from({length:o},(_,i)=>`<i class="pt po" data-p="${i}" style="top:${portY(n,i)-6}px" title="${esc(nm[i]||'output')}"></i>`+(o>1?`<span class="pl" style="top:${portY(n,i)-16}px">${esc(nm[i])}</span>`:'')).join('');
+  e.title=subtitle(n);
+  e.onmousedown=ev=>{if(ev.button!==0||ev.target.classList.contains('pt'))return;sel=n.id;const sx=ev.clientX,sy=ev.clientY,ox=n.x,oy=n.y;
+   const mv=m=>{n.x=Math.max(0,Math.round(ox+(m.clientX-sx)/Z));n.y=Math.max(0,Math.round(oy+(m.clientY-sy)/Z));e.style.left=n.x+'px';e.style.top=n.y+'px';edges()};
+   const up=()=>{removeEventListener('mousemove',mv);removeEventListener('mouseup',up);sync()};addEventListener('mousemove',mv);addEventListener('mouseup',up);
+   document.querySelectorAll('.nd').forEach(x=>x.classList.toggle('sel',x.id==n.id));inspect()};
+  w.appendChild(e)});
+ edges();sync()}
+function edges(){
+ let h='';S.edges.forEach((e,i)=>{const a=S.nodes.find(n=>n.id==e.from),b=S.nodes.find(n=>n.id==e.to);if(!a||!b)return;
+  const[x1,y1]=outPos(a,e.port),x2=b.x,y2=b.y+23,c=Math.max(40,Math.abs(x2-x1)/2);
+  h+=`<path data-e="${i}" class="${ran?(hot.has(i)?'hot':'cold'):''}" d="M${x1} ${y1}C${x1+c} ${y1} ${x2-c} ${y2} ${x2} ${y2}"><title>Click to delete</title></path>`});
+ $('#sv').innerHTML=h;
+ $('#sv').querySelectorAll('path').forEach(p=>p.onclick=()=>{S.edges.splice(p.dataset.e,1);ran=false;hot=new Set();draw()})}
+$('#world').addEventListener('mousedown',ev=>{
+ const po=ev.target.closest('.po');if(!po)return;ev.stopPropagation();
+ const n=S.nodes.find(x=>x.id==po.parentNode.id),port=+po.dataset.p,[x1,y1]=outPos(n,port);
+ const tmp=document.createElementNS('http://www.w3.org/2000/svg','path');$('#sv').appendChild(tmp);
+ const mv=m=>{const wr=$('#world').getBoundingClientRect();tmp.setAttribute('d',`M${x1} ${y1}L${(m.clientX-wr.left)/Z} ${(m.clientY-wr.top)/Z}`)};
+ const up=m=>{removeEventListener('mousemove',mv);removeEventListener('mouseup',up);tmp.remove();
+  const t=document.elementFromPoint(m.clientX,m.clientY),nd=t&&t.closest('.nd');
+  if(nd&&nd.id!=n.id&&!T[S.nodes.find(x=>x.id==nd.id).type].t&&!S.edges.some(e=>e.from==n.id&&e.port==port&&e.to==nd.id)){S.edges.push({from:n.id,port,to:nd.id});ran=false;hot=new Set();draw()}};
+ addEventListener('mousemove',mv);addEventListener('mouseup',up)});
+// Zoom
+let Z=1;
+function zoom(z){Z=Math.min(1.5,Math.max(.4,Math.round(z*100)/100));$('#world').style.transform=`scale(${Z})`;$('#zw').style.width=2400*Z+'px';$('#zw').style.height=1400*Z+'px';$('#zr').textContent=Math.round(Z*100)+'%';store.set('flowlab_zoom',Z)}
+function fit(min=.5){if(!S.nodes.length)return zoom(1);const cv=$('#cv'),mx=Math.max(...S.nodes.map(n=>n.x+230)),my=Math.max(...S.nodes.map(n=>n.y+H(n)+30));zoom(Math.max(min,Math.min(1,(cv.clientWidth-10)/mx,(cv.clientHeight-10)/my)));cv.scrollLeft=0;cv.scrollTop=0}
+$('#zi').onclick=()=>zoom(Z+.1);$('#zo').onclick=()=>zoom(Z-.1);$('#zr').onclick=()=>zoom(1);$('#zf').onclick=()=>fit(.4);
+$('#cv').addEventListener('wheel',e=>{if(!e.ctrlKey)return;e.preventDefault();zoom(Z*(e.deltaY<0?1.1:.9))},{passive:false});
+function follow(n){if(speed=='instant')return;const cv=$('#cv'),x=n.x*Z,y=n.y*Z,w=160*Z;if(x<cv.scrollLeft||x+w>cv.scrollLeft+cv.clientWidth||y<cv.scrollTop||y+50>cv.scrollTop+cv.clientHeight)cv.scrollTo({left:Math.max(0,x-cv.clientWidth/3),top:Math.max(0,y-cv.clientHeight/3),behavior:'smooth'})}
+
+// Inspector
+function fieldList(n){let src=last[n.id]&&last[n.id].input;if(!src){const t=S.nodes.find(x=>T[x.type].t);try{src=t?JSON.parse(t.p.data||'{}'):{}}catch(e){src={}}}
+ return`<datalist id="fl">${Object.keys(src||{}).map(k=>`<option value="{{ $json.${esc(k)} }}">`).join('')}</datalist>`}
+function opSelect(v){let h='',g='';for(const o of OPS){if(o[2]!=g){if(g)h+='</optgroup>';g=o[2];h+=`<optgroup label="${g}">`}h+=`<option value="${o[0]}"${o[0]==v?' selected':''}>${o[1]}</option>`}return'<select data-f="op" aria-label="Operator">'+h+'</optgroup></select>'}
+function rulesHtml(g){return g.rules.map((r,i)=>(i?`<button class="comb" data-a="comb" title="Switch between AND (all must be true) and OR (one is enough)">${g.comb=='or'?'OR':'AND'}</button>`:'')+
+ `<div class="rule" data-i="${i}"><input data-f="l" list="fl" placeholder="{{ $json.field }}" value="${esc(r.l)}" aria-label="Value to check">${opSelect(r.op)}<input data-f="r" placeholder="compare to"${OP[r.op]&&OP[r.op].u?' hidden':''} value="${esc(r.r)}" aria-label="Compare to"><button class="x" data-a="delr" title="Remove condition" aria-label="Remove condition">×</button></div>`).join('')+
+ `<button data-a="addr" class="sm">+ Add condition</button>`}
+const chk=(k,on,label,tip)=>`<label class="chk"><input type="checkbox" data-f="opt" data-k="${k}"${on?' checked':''}> <span>${label}${tip?`<br><span class="hint">${tip}</span>`:''}</span></label>`;
+function condHtml(n){const p=n.p;
+ if(n.type=='if')return`<label>Conditions</label>${rulesHtml(p)}${chk('ic',p.ic,'Ignore case','"Pro" matches "pro"')}<div class="hint" style="margin-top:8px">Top output = true, bottom = false. n8n: IF node. GHL: If/Else.</div>`;
+ return`<label>Branches, checked top to bottom</label>`+p.routes.map((rt,i)=>`<div class="route" data-ri="${i}"><div class="rh"><input data-f="name" value="${esc(rt.name)}" aria-label="Branch name"><button data-a="up" title="Move up" aria-label="Move branch up"${i?'':' disabled'}>↑</button><button data-a="dn" title="Move down" aria-label="Move branch down"${i<p.routes.length-1?'':' disabled'}>↓</button><button data-a="delrt" title="Remove branch" aria-label="Remove branch">×</button></div><div class="rn">Output ${i+1}</div>${rulesHtml(rt)}</div>`).join('')+
+  `<button data-a="addrt" class="sm">+ Add branch</button>${chk('fallback',p.fallback,'None branch','for contacts that match nothing (GHL "None", n8n Fallback Output)')}${chk('all',p.all,'Send to every matching branch','off: first match only (GHL, n8n). On: like Zapier Paths and Make Router')}${chk('ic',p.ic,'Ignore case','')}`}
+function remap(id,f){S.edges=S.edges.filter(e=>{if(e.from!=id)return true;const p=f(e.port);if(p<0)return false;e.port=p;return true});ran=false;hot=new Set()}
+function condWire(n,box){
+ const grp=el=>{const r=el.closest('[data-ri]');return r?n.p.routes[+r.dataset.ri]:n.p};
+ box.addEventListener('input',e=>{const f=e.target.dataset.f;if(!f)return;let redraw=false;
+  if(f=='opt'){const k=e.target.dataset.k;if(k=='fallback'&&!e.target.checked)remap(n.id,p=>p==n.p.routes.length?-1:p);n.p[k]=e.target.checked;redraw=true}
+  else if(f=='name')grp(e.target).name=e.target.value;
+  else{const g=grp(e.target),i=+e.target.closest('[data-i]').dataset.i;g.rules[i][f]=e.target.value;if(f=='op')e.target.parentNode.querySelector('[data-f="r"]').hidden=!!OP[e.target.value].u}
+  draw();if(redraw)inspect()});
+ box.addEventListener('click',e=>{const a=e.target.dataset.a;if(!a)return;e.preventDefault();const g=grp(e.target),R=n.p.routes?n.p.routes.length:0,ri=e.target.closest('[data-ri]')?+e.target.closest('[data-ri]').dataset.ri:-1;
+  if(a=='addr')g.rules.push({l:'',op:'str_eq',r:''});
+  if(a=='delr')g.rules.splice(+e.target.closest('[data-i]').dataset.i,1);
+  if(a=='comb')g.comb=g.comb=='or'?'and':'or';
+  if(a=='addrt'){remap(n.id,p=>p>=R?p+1:p);n.p.routes.push({name:'Branch '+(R+1),comb:'and',rules:[{l:'',op:'str_eq',r:''}]})}
+  if(a=='delrt'){remap(n.id,p=>p==ri?-1:p>ri?p-1:p);n.p.routes.splice(ri,1)}
+  if(a=='up'||a=='dn'){const k=a=='up'?ri-1:ri+1;remap(n.id,p=>p==ri?k:p==k?ri:p);[n.p.routes[ri],n.p.routes[k]]=[n.p.routes[k],n.p.routes[ri]]}
+  draw();inspect()})}
+function lastHtml(n){const r=last[n.id];
+ if(!r)return ran?'<details class="lr" open><summary>Last run</summary><div class="hint">Did not run in the last test (its branch was not taken).</div></details>':'';
+ const nm=outNames(n);let h=`<details class="lr" open><summary>Last run · ${esc(stamp(r.at))} · ${r.st=='er'?'<span class="bad">error</span>':r.st=='wn'?'<span class="wnt">warning</span>':'ok'}</summary>`;
+ if(r.error)h+=`<div class="bad" style="font-size:12px;margin-top:4px">${esc(r.error)}</div>`;
+ (r.warns||[]).forEach(w=>h+=`<div class="wnt">⚠ ${esc(w)}</div>`);
+ if(r.input!==undefined&&r.input!==null)h+=`<label>Input ($json)</label><pre>${esc(JSON.stringify(r.input,null,2))}</pre>`;
+ if(r.output){if(r.output.length>1)r.output.forEach((o,i)=>h+=`<label>Output · ${esc(nm[i])}</label><pre>${o==null?'(nothing)':esc(JSON.stringify(o,null,2))}</pre>`);else h+=`<label>Output</label><pre>${esc(JSON.stringify(r.output[0],null,2))}</pre>`}
+ return h+'</details>'}
+function inspect(){
+ const n=S.nodes.find(x=>x.id==sel),el=$('#ins');
+ if(!n){el.innerHTML='<span class="hint">Click a node to edit it. Drag from a right dot to a left dot to connect. Click a line to delete it. Delete key removes the selected node. Ctrl + mouse wheel zooms.</span>';return}
+ const d=T[n.type];let h=`<b>${esc(d.n)}</b> <span class="hint">(${n.id})</span><div class="hint">Use {{ $json.field }} to insert data. <code>$json</code> is the data arriving from the previous step.</div>`;
+ if(TG[n.type])h+=`<div class="tg"><b>Definition</b><br>${TG[n.type][0]}<br><b>How to use it</b><br>${TG[n.type][1]}<br><b>Where this JSON comes from</b><br>${TG[n.type][2]}</div>`;
+ d.f.forEach(([k,l,area,opts])=>{h+=`<label>${l}`+(opts?`<select data-k="${k}">${opts.map(o=>`<option${n.p[k]==o?' selected':''}>${o}</option>`).join('')}</select>`:area?`<textarea data-k="${k}" spellcheck="false"></textarea>`:`<input data-k="${k}">`)+'</label>'});
+ if(d.c)h+=fieldList(n)+'<div id="cond">'+condHtml(n)+'</div>';
+ h+='<br>'+(d.t?'<button id="tg">Full guide</button> ':'')+'<button id="del">Delete node</button>'+lastHtml(n);el.innerHTML=h;
+ el.querySelectorAll('[data-k]').forEach(i=>{if(i.tagName!='SELECT')i.value=n.p[i.dataset.k]??'';i.oninput=()=>{n.p[i.dataset.k]=i.value;const s=document.getElementById(n.id);if(s)s.querySelector('small').textContent=String(subtitle(n)).slice(0,48);sync();if(d.t&&simOn())renderTrig()}});
+ if(d.c)condWire(n,$('#cond'));
+ $('#del').onclick=delNode;const tg=$('#tg');if(tg)tg.onclick=()=>openDoc('trig','t-'+n.type)}
+function delNode(){S.nodes=S.nodes.filter(n=>n.id!=sel);S.edges=S.edges.filter(e=>e.from!=sel&&e.to!=sel);sel=null;ran=false;hot=new Set();draw();inspect();if(simOn())renderTrig()}
+addEventListener('keydown',e=>{if(e.key=='Delete'&&sel&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))delNode();if(e.key=='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();run()}});
+$('#cv').addEventListener('mousedown',e=>{if(['cv','zw','world','sv'].includes(e.target.id)){sel=null;document.querySelectorAll('.nd').forEach(x=>x.classList.remove('sel'));inspect()}});
+
+/* ---------- 9. Test panel: form / request, phone, inboxes, contact record ---------- */
+let SM={t:Date.now(),base:Date.now(),sms:[],mails:[],acts:[],who:null,box:'all',open:null,contact:null};
+const day=t=>new Date(t).toDateString();
+const fmtClock=t=>new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+const fmtDay=t=>new Date(t).toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
+const stamp=t=>fmtDay(t)+' '+fmtClock(t);
+const when=t=>day(t)==day(SM.base)?fmtClock(t):fmtDay(t).replace(/,.*$/,'')+' '+fmtClock(t);
+const linkify=s=>s.replace(/(?<![@\w.\/-])((?:https?:\/\/)?(?:[\w-]+\.)+(?:com|net|org|io|ph|co|app)(?:\/[\w\-./?=&%#]*)?)/g,'<u>$1</u>');
+const initials=s=>String(s||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase()||'?';
+const fromName=f=>{const m=String(f).match(/^\s*(.*?)\s*<(.+)>\s*$/);return m?m[1]||m[2]:String(f)};
+const fromAddr=f=>{const m=String(f).match(/<(.+)>/);return m?m[1]:String(f)};
+const simOn=()=>document.body.classList.contains('simon');
+const pick=(j,...k)=>{for(const x of k)if(j&&j[x]!=null&&j[x]!==''&&typeof j[x]!='object')return String(j[x]);return''};
+const STD=new Set(['name','full_name','first_name','last_name','email','phone','mobile','tags','dnd','smsSent','emailSent','response']);
+const KIND={trig:'TRIGGER',if:'BRANCH',sms:'SMS',email:'EMAIL',tag:'TAG',wait:'WAIT',skip:'SKIPPED',err:'ERROR',http:'HTTP',log:'LOG',set:'FIELD'};
+function simShow(on){const was=simOn();document.body.classList.toggle('simon',on);$('#simb').setAttribute('aria-pressed',on);store.set('flowlab_sim',on?'1':'0');if(on&&!was){if(!$('#strig'))simBuild();renderTrig();if(!fitted&&$('#cv').scrollWidth>$('#cv').clientWidth+40){fit();fitted=true}}}
+let fitted=false;
+function simBuild(){$('#sim').innerHTML=`<div class="simh"><b>Test run</b><span class="ff" id="ff"></span><span class="clk" title="Simulated time. Wait steps move it forward.">Clock <b id="clk">${esc(stamp(SM.t))}</b></span><button id="simx" title="Close the test panel" aria-label="Close the test panel">×</button></div>
+<div class="sec" id="strig"></div>
+<div class="duo"><div><h4>Contact's phone</h4><div class="phone"><div class="scr" id="phone"></div></div></div><div style="min-width:0"><h4>Email inboxes</h4><div class="mail" id="mail"></div></div></div>
+<div class="sec"><h4>Contact record (CRM)</h4><div class="crm" id="crm"></div></div>`;
+ $('#simx').onclick=()=>simShow(false);renderPhone();renderMail();renderCrm()}
+function mkContact(start,j){return{name:pick(j,'name','full_name','first_name','customer','client'),email:pick(j,'email')||(/@/.test(pick(j,'from'))?pick(j,'from'):''),phone:pick(j,'phone','mobile'),tags:listOf(j.tags).map(t=>({t:String(t)})),dnd:isDnd(j),fields:{}}}
+function simReset(start,data,keep){const now=Date.now();SM={t:now,base:now,sms:[],mails:[],acts:[],who:null,box:'all',open:null,contact:mkContact(start,data)};
+ if(!$('#strig'))simBuild();if(!keep)renderTrig(data,true);
+ const p=start.p;simAct('trig',start.type=='form'?'Form "'+(p.title||'form')+'" submitted':start.type=='webhook'?'Webhook received: POST /webhook/'+(p.path||'flowlab-'+start.id):start.type=='schedule'?'Schedule tick ('+cronText(p.cron)+')':'Manual execution started');
+ simData(data,true);clock();renderPhone();renderMail()}
+function clock(){const c=$('#clk');if(c)c.textContent=stamp(SM.t);const sb=document.querySelector('#phone .sb span');if(sb)sb.textContent=fmtClock(SM.t)}
+function simAct(k,text){SM.acts.push({k,text,t:SM.t,fresh:1});renderCrm()}
+function simSms(m){m.t=SM.t;m.fresh=1;SM.sms.push(m);SM.who=m.to;renderPhone();simAct('sms','To '+m.to+': "'+m.body.slice(0,60)+(m.body.length>60?'…':'')+'"')}
+function simEmail(m){m.t=SM.t;m.fresh=1;SM.mails.push(m);if(SM.open==null)SM.box='all';renderMail();simAct('email','To '+m.to+': "'+(m.subj||'(no subject)')+'"')}
+function simTag(g,add){const c=SM.contact;if(add)c.tags.push({t:g,fresh:1});else c.tags.forEach(x=>{if(x.t==g)x.gone=1});simAct('tag',(add?'Added ':'Removed ')+g)}
+function simData(j,first){const c=SM.contact;if(!c||!j)return;const n=pick(j,'name','full_name','first_name','customer','client');if(n)c.name=n;const e=pick(j,'email');if(e)c.email=e;const ph=pick(j,'phone','mobile');if(ph)c.phone=ph;c.dnd=isDnd(j);
+ for(const [k,v] of Object.entries(j)){if(STD.has(k)||(v&&typeof v=='object'))continue;const s=String(v);if(!c.fields[k]||c.fields[k].v!==s)c.fields[k]={v:s,fresh:!first}}renderCrm()}
+async function simWait(sec,my){const from=SM.t,to=from+sec*1000,ms=speed=='instant'?0:speed=='slow'?1800:1000;const ff=$('#ff');if(ff)ff.textContent='fast-forward +'+dur(sec);
+ if(ms){const t0=Date.now();while(my===RUN){const k=Math.min(1,(Date.now()-t0)/ms);SM.t=from+(to-from)*(k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2);clock();if(k>=1)break;await sleep(30)}}
+ if(my!==RUN)return;SM.t=to;clock();if(ff)ff.textContent='';simAct('wait','Waited '+dur(sec))}
+function renderPhone(){const el=$('#phone');if(!el)return;
+ const people=[...new Set(SM.sms.map(m=>m.to))];if(!people.includes(SM.who))SM.who=people[people.length-1]||null;
+ const c=SM.contact,label=num=>c&&num==c.phone&&c.name?c.name.split(' ')[0]+"'s phone":num,msgs=SM.sms.filter(m=>m.to==SM.who);
+ let h=`<div class="sb"><span>${esc(fmtClock(SM.t))}</span><span>5G <i class="bat"></i></span></div>`;
+ if(people.length>1)h+=`<div class="ths">${people.map(p=>`<button data-who="${esc(p)}" class="${p==SM.who?'on':''}">${esc(label(p))}</button>`).join('')}</div>`;
+ if(!msgs.length)h+=`<div class="empty">No text messages yet.<br>Each Send SMS step appears here the way the contact sees it.</div>`;
+ else{h+=`<div class="thh"><div class="av">YB</div><b>Your Business</b>${esc(msgs[msgs.length-1].from)}</div><div class="msgs">`;let prev=0;
+  msgs.forEach((m,i)=>{if(!i||m.t-prev>3600e3)h+=`<div class="ts">${esc(fmtDay(m.t))} · ${esc(fmtClock(m.t))}</div>`;prev=m.t;
+   h+=`<div class="bub${m.fresh?' new':''}" title="${m.sg.n} segment${m.sg.n>1?'s':''}, ${m.sg.len} characters${m.sg.uni?' (Unicode)':''}">${linkify(esc(m.body))}</div>`});
+  h+=`<div class="dl">Delivered · ${msgs[msgs.length-1].sg.n} segment${msgs[msgs.length-1].sg.n>1?'s':''}</div></div>`}
+ el.innerHTML=h+`<div class="cmp" aria-hidden="true">Text message</div>`;SM.sms.forEach(m=>m.fresh=0);
+ const ms=el.querySelector('.msgs');if(ms)ms.scrollTop=ms.scrollHeight;
+ el.querySelectorAll('[data-who]').forEach(b=>b.onclick=()=>{SM.who=b.dataset.who;renderPhone()})}
+function renderMail(){const el=$('#mail');if(!el)return;const c=SM.contact;
+ if(SM.open!=null&&SM.mails[SM.open]){const m=SM.mails[SM.open];m.read=1;
+  el.innerHTML=`<div class="mh"><button id="mback">← Inbox</button><span class="n">${SM.open+1} of ${SM.mails.length}</span></div><div class="mv"><h5>${esc(m.subj||'(no subject)')}</h5><div class="meta"><b>${esc(fromName(m.from))}</b> &lt;${esc(fromAddr(m.from))}&gt;<br>to ${esc(m.to)}<br>${esc(stamp(m.t))}</div><div class="body">${linkify(esc(m.body))}</div></div>`;
+  $('#mback').onclick=()=>{SM.open=null;renderMail()};return}
+ const boxes=[...new Set(SM.mails.map(m=>m.to))];if(SM.box!='all'&&!boxes.includes(SM.box))SM.box='all';
+ const list=SM.mails.map((m,i)=>[m,i]).filter(([m])=>SM.box=='all'||m.to==SM.box).reverse();
+ let h=`<div class="mh">Inbox<span class="n">${SM.mails.filter(m=>!m.read).length} unread</span></div>`;
+ if(boxes.length>1)h+=`<div class="ths">${['all',...boxes].map(b=>`<button data-box="${esc(b)}" class="${SM.box==b?'on':''}">${b=='all'?'All':esc(b)}</button>`).join('')}</div>`;
+ h+='<div class="ml">'+(list.length?list.map(([m,i])=>`<div class="mr${m.read?'':' unread'}${m.fresh?' new':''}" data-i="${i}" tabindex="0" role="button"><span class="av">${esc(initials(fromName(m.from)))}</span><span class="f">${esc(fromName(m.from))}</span><span class="t">${esc(when(m.t))}</span><span class="s">${esc(m.subj||'(no subject)')}</span><span class="p">${esc(m.body.replace(/\s+/g,' ').slice(0,100))}</span><span class="to">to ${esc(m.to)}${c&&c.email&&m.to!=c.email?'<span class="tagx">internal</span>':''}</span></div>`).join(''):'<div class="empty">No emails yet.<br>Each Send email step lands in the recipient\'s inbox here.</div>')+'</div>';
+ el.innerHTML=h;SM.mails.forEach(m=>m.fresh=0);
+ el.querySelectorAll('[data-box]').forEach(b=>b.onclick=()=>{SM.box=b.dataset.box;renderMail()});
+ el.querySelectorAll('.mr').forEach(r=>{const o=()=>{SM.open=+r.dataset.i;renderMail()};r.onclick=o;r.onkeydown=e=>{if(e.key=='Enter'||e.key==' '){e.preventDefault();o()}}})}
+function renderCrm(){const el=$('#crm');if(!el)return;const c=SM.contact;
+ if(!c){el.innerHTML='<div class="empty" style="color:var(--mu)">Run the workflow to see the contact record fill in.</div>';return}
+ const tags=c.tags.length?c.tags.map(t=>`<span class="chip${t.fresh?' new':''}${t.gone?' gone':''}">${esc(t.t)}</span>`).join(''):'<span class="hint">none</span>';
+ const f=Object.entries(c.fields);
+ const who=c.name||c.email||c.phone;
+ el.innerHTML=`<div class="ch"><span class="av">${esc(who?initials(c.name||who.replace(/@.*/,'')):'?')}</span><div><div class="nm">${esc(who||'No contact yet')}</div><div class="ci">${esc([c.name?c.email:'',c.phone&&c.phone!=who?c.phone:''].filter(Boolean).join(' · ')||(who?(c.name?'no email or phone':'no name on file'):'a schedule tick carries no contact; later steps must fetch one'))}</div></div>${c.dnd?'<span class="dnd" title="Do Not Disturb: messages are blocked">DND on</span>':''}</div>
+<div class="cgrid"><div class="cb"><h4>Tags</h4><div class="chips">${tags}</div></div><div class="cb"><h4>Fields</h4><div class="kv">${f.length?f.map(([k,v])=>`<span>${esc(k)}</span><span${v.fresh?' class="fresh"':''}>${esc(v.v)}</span>`).join(''):'<span class="hint">none</span>'}</div></div></div>
+<div class="cb"><h4>Activity</h4><ol class="act">${SM.acts.map(a=>`<li${a.fresh?' class="new"':''}><span class="tm">${esc(when(a.t))}</span><span class="k ${a.k}">${KIND[a.k]||a.k}</span><span>${esc(a.text)}</span></li>`).join('')}</ol></div>`;
+ c.tags.forEach(t=>t.fresh=0);SM.acts.forEach(a=>a.fresh=0);const ol=el.querySelector('.act');if(ol)ol.scrollTop=ol.scrollHeight}
+function renderTrig(data,auto){const el=$('#strig');if(!el)return;const n=S.nodes.find(x=>T[x.type].t);
+ if(!n){el.innerHTML='<div class="hint">Add a trigger (amber node) to start a test run.</div>';return}
+ let sample;try{sample=data!==undefined?data:JSON.parse(n.p.data||'{}')}catch(e){el.innerHTML=`<div class="resp bad">The sample JSON in "${esc(T[n.type].n)}" is not valid JSON: ${esc(e.message)}</div>`;return}
+ const p=n.p;
+ if(n.type=='form'){const fs=formFields(sample);
+  el.innerHTML=`<h4>The form your visitor fills in</h4><form class="formcard" id="sform" novalidate><h5>${esc(p.title||'Contact us')}</h5><div class="url">yourbusiness.com/${esc(String(p.title||'form').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''))}</div><div class="fg">${fs.map(f=>f.type=='checkbox'?`<label class="cbx"><input type="checkbox" name="${esc(f.key)}"${f.value?' checked':''}> ${esc(f.label)}</label>`:`<label>${esc(f.label)}<input name="${esc(f.key)}" type="${f.type}" value="${esc(f.value)}"${f.type=='number'?' step="any"':''}></label>`).join('')}</div><button class="sub" type="submit">Submit</button><div class="fnote">Submit runs the workflow with these values. <a href="#" id="ssave">Save them as the sample</a></div></form>`;
+  const read=()=>{const f=$('#sform');return fromFields(sample,(k,type)=>{const i=f.elements.namedItem(k);return i?(type=='checkbox'?i.checked:i.value):undefined})};
+  $('#sform').onsubmit=e=>{e.preventDefault();run(read(),{keep:1})};
+  $('#ssave').onclick=e=>{e.preventDefault();p.data=JSON.stringify(read());sync();if(sel==n.id)inspect();e.target.textContent='Saved';setTimeout(()=>{if(e.target.isConnected)e.target.textContent='Save them as the sample'},1200)};
+  if(auto){const b=$('#sform .sub');b.classList.add('press');setTimeout(()=>b.classList.remove('press'),250)}}
+ else if(n.type=='webhook'){
+  el.innerHTML=`<h4>The request another app sends</h4><div class="req"><div><span class="m">POST</span>https://hooks.yourbusiness.test/webhook/${esc(p.path||'flowlab-'+n.id)}</div><div class="hd">Content-Type: application/json</div><textarea id="wbody" spellcheck="false" aria-label="Request body">${esc(JSON.stringify(sample,null,2))}</textarea><div class="row"><button class="go" id="wsend">Send request</button><span class="resp${auto?' ok':''}" id="wresp">${auto?'200 OK · {"message":"Workflow was started"}':''}</span></div><div class="hint">In n8n these fields arrive under <code>$json.body</code>; FlowLab puts them straight on <code>$json</code>.</div></div>`;
+  $('#wsend').onclick=()=>{const r=$('#wresp');let b;try{b=JSON.parse($('#wbody').value)}catch(e){r.className='resp bad';r.textContent='400 Bad Request · the body is not valid JSON';return}
+   if(!b||typeof b!='object'||Array.isArray(b)){r.className='resp bad';r.textContent='400 Bad Request · send a JSON object';return}
+   r.className='resp ok';r.textContent='200 OK · {"message":"Workflow was started"}';run(b,{keep:1})}}
+ else if(n.type=='schedule'){const nx=cronNext(p.cron,Date.now());
+  el.innerHTML=`<h4>The clock that starts this flow</h4><div class="req"><div><span class="m">CRON</span>${esc(p.cron)} · ${esc(cronText(p.cron))}</div><div class="hd">Next real run: ${nx?esc(stamp(nx)):'not a valid 5-part rule'}</div><div class="row"><button class="go" id="tick">Fire a tick now</button></div><div class="hint">A tick carries no contact data. A later step (Code or HTTP) must fetch or create it.</div></div>`;
+  $('#tick').onclick=()=>run(sample,{keep:1})}
+ else{el.innerHTML=`<h4>Manual start</h4><div class="req"><div class="hd">Runs only when you press Execute.</div><pre>${esc(JSON.stringify(sample,null,2))}</pre><button class="go" id="mexec">Execute workflow</button></div>`;
+  $('#mexec').onclick=()=>run(sample,{keep:1})}}
+// Cron helpers (5 fields: minute hour day-of-month month day-of-week)
+function cronText(c){const f=String(c||'').trim().split(/\s+/);if(f.length!=5)return'custom rule';const[mi,h,dom,mon,dow]=f,num=/^\d+$/;
+ const hh=num.test(h)&&num.test(mi)?h.padStart(2,'0')+':'+mi.padStart(2,'0'):null,days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+ if(/^\*\/\d+$/.test(mi)&&h=='*'&&dom=='*'&&mon=='*'&&dow=='*')return'every '+mi.slice(2)+' minutes';
+ if(num.test(mi)&&h=='*'&&dom=='*'&&mon=='*'&&dow=='*')return'every hour at :'+mi.padStart(2,'0');
+ if(hh&&dom=='*'&&mon=='*'&&dow=='*')return'every day at '+hh;
+ if(hh&&dom=='*'&&mon=='*'&&dow=='1-5')return'weekdays at '+hh;
+ if(hh&&dom=='*'&&mon=='*'&&/^[0-7]$/.test(dow))return'every '+days[dow%7]+' at '+hh;
+ if(hh&&num.test(dom)&&mon=='*'&&dow=='*')return'day '+dom+' of each month at '+hh;
+ return'custom rule'}
+function cronNext(c,from){const f=String(c||'').trim().split(/\s+/);if(f.length!=5)return null;
+ const parse=(s,lo,hi)=>{const set=new Set();for(const part of s.split(',')){let[r,st]=part.split('/');st=st===undefined?1:+st;if(!(st>0))return null;let a=lo,b=hi;
+  if(r!='*'){const ab=r.split('-').map(Number);a=ab[0];b=ab.length>1?ab[1]:(part.includes('/')?hi:a)}if(isNaN(a)||isNaN(b)||a<lo||b>hi)return null;for(let v=a;v<=b;v+=st)set.add(v)}return set};
+ const M=parse(f[0],0,59),Hr=parse(f[1],0,23),D=parse(f[2],1,31),Mo=parse(f[3],1,12),W=parse(f[4],0,7);if(!M||!Hr||!D||!Mo||!W)return null;if(W.has(7))W.add(0);
+ const both=f[2]!='*'&&f[4]!='*',d=new Date(from);d.setSeconds(0,0);d.setMinutes(d.getMinutes()+1);
+ for(let i=0;i<200000;i++){
+  const dayOk=both?(D.has(d.getDate())||W.has(d.getDay())):(D.has(d.getDate())&&W.has(d.getDay()));
+  if(!Mo.has(d.getMonth()+1)||!dayOk){d.setDate(d.getDate()+1);d.setHours(0,0,0,0);continue}
+  if(!Hr.has(d.getHours())){d.setHours(d.getHours()+1,0,0,0);continue}
+  if(!M.has(d.getMinutes())){d.setMinutes(d.getMinutes()+1,0,0);continue}
+  return d.getTime()}return null}
+
+/* ---------- 10. Tabs, import/export, persistence ---------- */
+let cur='log';
+function tab(t){cur=t;document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t==t));if(t!='log')sync()}
+function sync(){store.set('flowlab',JSON.stringify(S));
+ if(cur=='json')$('#out').textContent=JSON.stringify(S,null,2);if(cur=='code')$('#out').textContent=compile();if(cur=='n8n'){const r=toN8n();$('#out').textContent='Notes before importing:\n- '+r.notes.join('\n- ')+'\n\n'+JSON.stringify(r.wf,null,2)}}
+document.querySelector('.tabs').onclick=e=>{const t=e.target.dataset.t;if(t){tab(t);if(t=='log')$('#out').textContent=LOG}};
+const save=(name,txt,type)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000)};
+// Brings older or hand-edited workflow files up to date (FlowLab 1.0 IF nodes, Wait in seconds, missing fields).
+function normalize(s){
+ if(!s||!Array.isArray(s.nodes))throw new Error('not a FlowLab workflow');
+ s.nodes=s.nodes.filter(n=>n&&T[n.type]);s.edges=Array.isArray(s.edges)?s.edges:[];
+ for(const n of s.nodes){const p=n.p=n.p&&typeof n.p=='object'?n.p:{};
+  if(n.type=='if'&&!Array.isArray(p.rules)){const m={equals:'str_eq',contains:'str_has','greater than':'num_gt',exists:'nempty'};p.rules=[{l:p.left??'',op:m[p.op]||'str_eq',r:p.right??''}];p.comb='and';delete p.left;delete p.op;delete p.right}
+  if(n.type=='wait'&&p.sec!==undefined&&p.amount===undefined){const v=Number(p.sec)||0,u=v&&v%86400==0?'days':v&&v%3600==0?'hours':v&&v%60==0?'minutes':'seconds';p.amount=String(v/UNIT[u]);p.unit=u;delete p.sec}
+  const d=clone(T[n.type].d);for(const k in d)if(p[k]===undefined)p[k]=d[k];
+  if(T[n.type].c)(n.type=='if'?[p]:p.routes).forEach(g=>{g.rules=Array.isArray(g.rules)?g.rules:[];g.rules.forEach(r=>{if(!OP[r.op])r.op='str_eq'})});
+  n.x=Math.max(0,+n.x||0);n.y=Math.max(0,+n.y||0)}
+ s.edges=s.edges.filter(e=>{const a=s.nodes.find(n=>n.id==e.from),b=s.nodes.find(n=>n.id==e.to);return a&&b&&e.port>=0&&e.port<outs(a)});
+ return s}
+const fixSeq=()=>{seq=1+Math.max(0,...S.nodes.map(n=>+String(n.id).replace(/^n/,'')||0))};
+$('#run').onclick=()=>run();
+$('#spd').value=speed;$('#spd').onchange=()=>{speed=$('#spd').value;store.set('flowlab_speed',speed)};
+$('#simb').onclick=()=>simShow(!simOn());
+$('#mk').onclick=()=>{if(gen($('#gen').value)){sel=null;ran=false;last={};draw();inspect();if(simOn())renderTrig()}else alert('Try: when form submitted, if score greater than 50 and phone is not empty, add tag lead, wait 1 day, send sms Hello')};
+$('#gen').onkeydown=e=>{if(e.key=='Enter')$('#mk').click()};
+$('#exj').onclick=()=>save('workflow.json',JSON.stringify(S,null,2),'application/json');
+$('#exc').onclick=()=>save('workflow.js',compile(),'text/javascript');
+$('#clr').onclick=()=>{S={nodes:[],edges:[]};sel=null;ran=false;last={};RUN++;draw();inspect();if(simOn())renderTrig()};
+$('#imj').onclick=()=>{const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=async()=>{try{S=normalize(JSON.parse(await i.files[0].text()));fixSeq();sel=null;ran=false;last={};draw();inspect();if(simOn())renderTrig()}catch(e){alert('That file is not a FlowLab workflow.')}};i.click()};
+
+/* ---------- 11. Real-world example workflows ---------- */
+// node: [id, type, settings, x, y]   edge: [from, output, to]   (IF outputs: 0 true, 1 false)
+const R=(f,op,r='')=>({l:'{{ $json.'+f+' }}',op,r:String(r)});
+const ALL=(...rules)=>({comb:'and',rules}),W=(amount,unit)=>({amount:String(amount),unit});
+const BR=(name,...rules)=>({name,comb:'and',rules});
+const EX={
+'Lead qualification & routing':{d:'Teaches: scoring in a Code node, then an IF with two conditions joined by AND (score above 60 AND a phone number to text). Hot leads get an instant SMS and a sales alert; the rest are tagged nurture, wait a day and get a guide by email. In the Test panel change budget to 1000, or clear the phone, then press Submit to see the other branch.',
+n:[['a','form',{title:'Get your free quote',data:'{"name":"Ada Cruz","email":"ada@example.com","phone":"+639171234567","budget":8000,"source":"facebook"}'},20,110],
+['b','code',{js:"let s = 0;\nif ($json.budget > 5000) s += 50;\nif ($json.source == 'referral') s += 30;\nif ($json.phone) s += 20;\nreturn {...$json, score: s};"},220,110],
+['c','if',ALL(R('score','num_gt',60),R('phone','nempty')),420,104],
+['d','tag',{tag:'hot-lead'},640,30],['e','sms',{body:'Hi {{ $json.name }}, a specialist will call you within 5 minutes.'},840,30],
+['f','email',{to:'sales@mycompany.com',subj:'HOT lead: {{ $json.name }}',body:'Score {{ $json.score }} from {{ $json.source }}. Call {{ $json.phone }}.'},1040,30],
+['g','tag',{tag:'nurture'},640,200],['h','wait',W(1,'days'),840,200],
+['i','email',{subj:'Your free guide',body:'Hi {{ $json.name }}, here is the guide you asked for.'},1040,200]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['e',0,'f'],['c',1,'g'],['g',0,'h'],['h',0,'i']]},
+
+'Returning customer + SMS consent (tags, DND)':{d:'Teaches: a list condition ("has tag", GHL\'s Includes), a true/false condition, and the rules real CRMs enforce. Lea is not a customer yet and agreed to texts, so she gets an SMS. In the Test panel add "customer" to her tags for the welcome-back path, untick SMS consent to fall back to email, or tick Dnd: the SMS step is then skipped, as a real CRM would, even though the logic says send.',
+n:[['a','form',{title:'Join our list',data:'{"name":"Lea Santos","email":"lea@example.com","phone":"+639171234567","sms_consent":true,"dnd":false,"tags":["newsletter"]}'},20,140],
+['b','if',ALL(R('tags','arr_has','customer')),220,134],
+['c','sms',{body:'Welcome back {{ $json.name }}! Your loyalty discount is waiting at example.com/vip'},440,30],['d','tag',{tag:'returning'},660,30],
+['e','if',ALL(R('sms_consent','bool_true'),R('phone','nempty')),440,214],
+['f','sms',{body:'Hi {{ $json.name }}, thanks for joining! Reply STOP to opt out.'},680,150],['g','tag',{tag:'sms-opt-in'},900,150],
+['h','email',{subj:'Thanks for joining',body:'Hi {{ $json.name }}, you are on the list. We will only email you.'},680,300],['i','tag',{tag:'email-only'},900,300]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['b',1,'e'],['e',0,'f'],['f',0,'g'],['e',1,'h'],['h',0,'i']]},
+
+'Missed-call text back':{d:'Teaches: nested IFs, two paths that merge into one node, and a safe skip branch. In the Test panel set "name" to "" for the generic text, or "phone" to "" for the skip path. Try a phone without the country code (09171234567) to see the real-world "invalid number" error.',
+n:[['a','webhook',{data:'{"event":"call.missed","phone":"+639171234567","name":"Ben"}'},20,120],
+['b','if',ALL(R('phone','nempty')),220,114],
+['c','if',ALL(R('name','nempty')),440,34],
+['d','sms',{to:'{{ $json.phone }}',body:'Hi {{ $json.name }}, sorry we missed your call! Reply here or book at example.com/book'},680,10],
+['e','sms',{to:'{{ $json.phone }}',body:'Hi! Sorry we missed your call. Reply here and we will get right back to you.'},680,150],
+['f','tag',{tag:'missed-call'},920,85],['g','log',{},440,270]],
+e:[['a',0,'b'],['b',0,'c'],['b',1,'g'],['c',0,'d'],['c',1,'e'],['d',0,'f'],['e',0,'f']]},
+
+'Appointment confirmation + reminders':{d:'Teaches: long drips with Wait nodes. Watch the clock in the Test panel jump ahead: confirmation now, a reminder a day later, and a last text 23 hours after that. (The compiled script really waits, unless you run it with --fast.)',
+n:[['a','webhook',{data:'{"name":"Cara","email":"cara@example.com","phone":"+639171234567","service":"Consultation","when":"Friday 3 PM"}'},20,40],
+['b','email',{subj:'Booking confirmed: {{ $json.service }}',body:'Hi {{ $json.name }}, you are booked for {{ $json.when }}.'},220,40],
+['c','tag',{tag:'booked'},420,40],['d','wait',W(1,'days'),620,40],
+['e','sms',{body:'Reminder: your {{ $json.service }} is tomorrow ({{ $json.when }}).'},820,40],
+['f','wait',W(23,'hours'),20,200],['g','sms',{body:'Starting in 1 hour. See you soon, {{ $json.name }}!'},220,200],['h','tag',{tag:'reminded'},420,200]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['e',0,'f'],['f',0,'g'],['g',0,'h']]},
+
+'Paid order: totals + VIP treatment':{d:'Teaches: a Code node for math (tax and total), then a VIP branch that sets a coupon code and uses it in the email. Change amount to 90 to take the regular-receipt path.',
+n:[['a','webhook',{data:'{"event":"order.paid","customer":"Dan","email":"dan@example.com","amount":240,"items":3}'},20,120],
+['b','code',{js:'const tax = +($json.amount * 0.12).toFixed(2);\nreturn {...$json, tax, total: +($json.amount + tax).toFixed(2)};'},220,120],
+['c','if',ALL(R('amount','num_gt',200)),420,114],
+['d','tag',{tag:'vip'},640,30],['e','set',{key:'coupon',value:'VIP15'},840,30],
+['f','email',{subj:'Thank you, VIP!',body:'Total paid {{ $json.total }}. Use code {{ $json.coupon }} for 15% off next time.'},1040,30],
+['g','email',{subj:'Your receipt',body:'Thanks {{ $json.customer }}. Total paid {{ $json.total }}.'},640,210],['h','tag',{tag:'customer'},840,210]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['e',0,'f'],['c',1,'g'],['g',0,'h']]},
+
+'Abandoned cart recovery':{d:'Teaches: a timed follow-up that branches on cart value (bigger carts get a coupon), and two branches that merge into a final tag.',
+n:[['a','webhook',{data:'{"name":"Eli","email":"eli@example.com","cart_value":89,"item":"Running shoes"}'},20,120],
+['b','email',{subj:'You left something behind',body:'Hi {{ $json.name }}, your {{ $json.item }} is still in your cart.'},220,120],
+['c','wait',W(1,'days'),420,120],
+['d','if',ALL(R('cart_value','num_gt',80)),620,114],
+['e','set',{key:'coupon',value:'SAVE10'},840,30],
+['f','email',{subj:'10% off your {{ $json.item }}',body:'Use code {{ $json.coupon }} at checkout, {{ $json.name }}.'},1040,30],
+['g','email',{subj:'Still thinking about it?',body:'Your {{ $json.item }} is waiting for you.'},840,210],
+['h','tag',{tag:'cart-abandoned'},1240,120]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['e',0,'f'],['d',1,'g'],['f',0,'h'],['g',0,'h']]},
+
+'Plan-based onboarding (Switch)':{d:'Teaches: a Switch with three outcomes: Pro, Team, and the None branch for everyone else. In GHL this is one If/Else with several branches; in n8n it is a Switch node. "Ignore case" is on, so "Team" matches "team". Try plan = pro, team or free.',
+n:[['a','webhook',{data:'{"name":"Ivy","email":"ivy@example.com","plan":"Team"}'},20,150],
+['b','switch',{ic:true,all:false,fallback:true,routes:[BR('Pro',R('plan','str_eq','pro')),BR('Team',R('plan','str_eq','team'))]},220,135],
+['c','set',{key:'seats',value:'5'},460,30],['d','email',{subj:'Welcome to Pro',body:'Hi {{ $json.name }}, you have {{ $json.seats }} seats.'},660,30],['e','tag',{tag:'plan-pro'},860,30],
+['g','set',{key:'seats',value:'20'},460,150],['h','email',{subj:'Welcome to Team',body:'Hi {{ $json.name }}, invite your {{ $json.seats }} teammates.'},660,150],['i','tag',{tag:'plan-team'},860,150],
+['j','email',{subj:'Welcome!',body:'Hi {{ $json.name }}, upgrade any time for more features.'},460,270],['k','tag',{tag:'plan-free'},660,270]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['b',1,'g'],['g',0,'h'],['h',0,'i'],['b',2,'j'],['j',0,'k']]},
+
+'Overdue invoice escalation (order matters)':{d:'Teaches: why branch order matters. 20 days overdue matches BOTH "more than 14" and "more than 7", but GHL If/Else and n8n Switch only take the first match, so only the final notice goes out. Tick "Send to every matching branch" on the Switch to see Zapier Paths / Make Router behaviour: the client then also gets the softer email. Change days_overdue to 10 or 3 to try the other tiers.',
+n:[['a','webhook',{data:'{"client":"Jo\'s Bakery","email":"jo@example.com","phone":"+639171234567","amount":500,"days_overdue":20}'},20,150],
+['b','switch',{ic:false,all:false,fallback:true,routes:[BR('Over 14 days',R('days_overdue','num_gt',14)),BR('Over 7 days',R('days_overdue','num_gt',7))]},220,135],
+['c','email',{subj:'FINAL NOTICE: invoice overdue',body:'{{ $json.client }}, {{ $json.amount }} is {{ $json.days_overdue }} days overdue. Pay now to avoid collections.'},460,30],['d','tag',{tag:'collections'},680,30],
+['f','email',{subj:'Payment overdue',body:'{{ $json.client }}, please settle {{ $json.amount }} within 3 days.'},460,150],['g','sms',{to:'{{ $json.phone }}',body:'Reminder: invoice of {{ $json.amount }} is overdue.'},680,150],
+['h','email',{subj:'Friendly reminder',body:'Hi {{ $json.client }}, just a nudge about your invoice of {{ $json.amount }}.'},460,270]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['b',1,'f'],['f',0,'g'],['b',2,'h']]},
+
+'API enrichment (needs internet)':{d:'Teaches: HTTP node, reading nested response data in a Code node, and branching on the result. Calls the public GitHub API, so it needs an internet connection. If it fails, the HTTP node turns red, just like a real failed call.',
+n:[['a','manual',{data:'{"email":"ada@example.com"}'},20,100],
+['b','http',{url:'https://api.github.com/users/octocat',method:'GET'},220,100],
+['c','code',{js:"return {...$json, followers: $json.response.followers, company: $json.response.company || 'unknown'};"},420,100],
+['d','if',ALL(R('followers','num_gt',1000)),620,94],
+['e','tag',{tag:'influencer'},840,30],['f','tag',{tag:'standard'},840,200]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['d',1,'f']]},
+
+'Review request + unhappy-customer alert':{d:'Teaches: waiting before asking, then routing by rating with "greater than or equal to". Happy customers (4 or 5) get a review link; unhappy ones trigger a manager alert and an apology instead of a public review request. Change rating to 2 to test.',
+n:[['a','webhook',{data:'{"customer":"Gina","email":"gina@example.com","phone":"+639171234567","rating":5,"job":"Aircon cleaning"}'},20,120],
+['w','wait',W(2,'days'),200,120],['b','if',ALL(R('rating','num_gte',4)),380,114],
+['c','sms',{to:'{{ $json.phone }}',body:'Thanks {{ $json.customer }}! Would you leave us a quick review? example.com/review'},600,30],['d','tag',{tag:'promoter'},820,30],
+['e','email',{to:'manager@mycompany.com',subj:'Unhappy customer: {{ $json.customer }}',body:'Rated {{ $json.rating }}/5 for {{ $json.job }}. Please call them.'},600,210],
+['f','tag',{tag:'detractor'},820,210],['g','sms',{to:'{{ $json.phone }}',body:'We are sorry, {{ $json.customer }}. A manager will contact you today.'},1040,210]],
+e:[['a',0,'w'],['w',0,'b'],['b',0,'c'],['c',0,'d'],['b',1,'e'],['e',0,'f'],['f',0,'g']]},
+
+'No-show recovery with repeat-offender check':{d:'Teaches: using a counter field to change behaviour. First-time no-shows get a friendly reschedule sequence; repeat no-shows are flagged high-risk and sent to a manager. Change noShowCount to 3.',
+n:[['a','webhook',{data:'{"name":"Hal","email":"hal@example.com","phone":"+639171234567","noShowCount":1}'},20,120],
+['b','tag',{tag:'no-show'},220,120],['c','if',ALL(R('noShowCount','num_gt',1)),420,114],
+['d','tag',{tag:'high-risk'},640,30],['e','email',{to:'manager@mycompany.com',subj:'Repeat no-show: {{ $json.name }}',body:'Missed {{ $json.noShowCount }} appointments. Consider requiring a deposit.'},840,30],
+['f','sms',{to:'{{ $json.phone }}',body:'Hi {{ $json.name }}, we missed you today. Want to pick a new time?'},640,210],
+['g','wait',W(1,'days'),840,210],['h','email',{subj:'Let us reschedule',body:'Hi {{ $json.name }}, here is a link to rebook: example.com/book'},1040,210]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['c',1,'f'],['f',0,'g'],['g',0,'h']]},
+
+'Birthday promo (scheduled)':{d:'Teaches: a Schedule trigger plus date logic in a Code node. Today is compared to the contact birthday as month-day text. Edit the Code node so birthday matches today (for example 10-28) to see the promo branch.',
+n:[['a','schedule',{cron:'0 9 * * *',data:'{"tick":1}'},20,120],
+['b','code',{js:"const t = new Date();\nreturn {...$json, name: 'Fay', phone: '+639171234567', birthday: '3-15', today: (t.getMonth() + 1) + '-' + t.getDate()};"},220,120],
+['c','if',ALL(R('birthday','str_eq','{{ $json.today }}')),420,114],
+['d','sms',{to:'{{ $json.phone }}',body:'Happy birthday {{ $json.name }}! Enjoy 20% off today with code BDAY20.'},640,30],['e','tag',{tag:'birthday-promo-sent'},860,30],
+['f','log',{},640,210]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['c',1,'f']]},
+
+'Support ticket triage':{d:'Teaches: classifying text with regular expressions in a Code node, then a true/false condition. Urgent tickets page the on-call person; others get an auto-reply and a category tag (the tag value is itself an expression).',
+n:[['a','webhook',{data:'{"from":"jay@example.com","subject":"URGENT: site is down","message":"Checkout fails for every customer"}'},20,120],
+['b','code',{js:"const text = ($json.subject + ' ' + $json.message).toLowerCase();\nconst urgent = /urgent|down|outage|asap/.test(text);\nconst category = /refund|charge|invoice/.test(text) ? 'billing' : /error|bug|fails|down/.test(text) ? 'bug' : 'general';\nreturn {...$json, urgent, category};"},220,120],
+['c','if',ALL(R('urgent','bool_true')),420,114],
+['d','sms',{to:'+639170000000',body:'URGENT ticket from {{ $json.from }}: {{ $json.subject }}'},640,30],['e','tag',{tag:'urgent'},840,30],
+['f','email',{to:'{{ $json.from }}',subj:'We are on it',body:'Your urgent ticket was escalated to our on-call engineer.'},1040,30],
+['g','tag',{tag:'{{ $json.category }}'},640,210],['h','email',{to:'{{ $json.from }}',subj:'We got your message',body:'Thanks, we will reply within one business day.'},840,210]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['e',0,'f'],['c',1,'g'],['g',0,'h']]},
+
+'Webinar follow-up (attended vs missed)':{d:'Teaches: the same funnel splitting into two different follow-ups, with "Ignore case" so Yes, YES and yes all match. Attendees get a sales offer; no-shows get the replay. Change attended to yes to switch branches.',
+n:[['a','form',{title:'Register for the webinar',data:'{"name":"Kai","email":"kai@example.com","phone":"+639171234567","attended":"no"}'},20,120],
+['b','email',{subj:'You are registered!',body:'Hi {{ $json.name }}, the webinar starts tomorrow at 7 PM.'},220,120],
+['c','wait',W(1,'days'),420,120],['d','if',{comb:'and',ic:true,rules:[R('attended','str_eq','yes')]},620,114],
+['e','tag',{tag:'attended'},840,30],['f','email',{subj:'Thanks for joining',body:'Hi {{ $json.name }}, here is your attendee-only offer.'},1040,30],
+['g','tag',{tag:'missed-webinar'},840,210],['h','email',{subj:'Here is the replay',body:'Hi {{ $json.name }}, sorry we missed you. Watch the replay here.'},1040,210]],
+e:[['a',0,'b'],['b',0,'c'],['c',0,'d'],['d',0,'e'],['e',0,'f'],['d',1,'g'],['g',0,'h']]}
+};
+function loadExample(k){const x=EX[k];if(!x)return;
+ S=normalize({nodes:x.n.map(([i,t,p,px,py])=>({id:'n'+i,type:t,p:{...clone(T[t].d),...clone(p)},x:px,y:py})),edges:x.e.map(([f,p,t])=>({from:'n'+f,port:p,to:'n'+t}))});
+ fixSeq();sel=null;ran=false;last={};RUN++;tab('log');draw();inspect();fit();LOG=x.d+'\n\nPress "Run workflow" to try it.';$('#out').textContent=LOG;if(simOn())renderTrig()}
+$('#ex').innerHTML='<option value="">Load an example…</option>'+Object.keys(EX).map(k=>`<option>${esc(k)}</option>`).join('');
+$('#ex').onchange=()=>{loadExample($('#ex').value);$('#ex').value=''};
+
+/* ---------- 12. n8n exporter: FlowLab graph -> n8n workflow JSON ---------- */
+// In n8n: Workflows > top-right menu > Import from file (or paste the JSON onto the canvas).
+const uid=()=>'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c=='x'?r:r&3|8).toString(16)});
+const xp=s=>String(s??'').includes('{{')?'='+s:String(s??'');   // n8n expressions start with "="
+function n8nCond(g,ic,notes){
+ return{options:{caseSensitive:!ic,leftValue:'',typeValidation:'loose',version:2},combinator:g.comb=='or'?'or':'and',
+  conditions:g.rules.map(r=>{const o=OP[r.op],op={type:o.nt,operation:o.no};if(o.u)op.singleValue=true;
+   if(r.op=='arr_has'||r.op=='arr_nhas')op.rightType='any';if(r.op=='arr_len_gt')op.rightType='number';
+   if(/^n?empty$/.test(r.op))notes.add('"is empty" / "is not empty" export as String checks. For lists such as tags, use the List / tags operators, which export as Array checks.');
+   if(/^bool/.test(r.op))notes.add('Boolean checks: with "Convert types where required", n8n counts any non-empty text as true, so "no" is true.');
+   let rv=o.u?'':xp(r.r);if((o.nt=='number'||r.op=='arr_len_gt')&&/^\s*-?\d+(\.\d+)?\s*$/.test(String(r.r)))rv=Number(r.r);
+   return{id:uid(),leftValue:xp(r.l),rightValue:rv,operator:op}})}}
+function toN8n(){
+ const notes=new Set(),used={},nm={},src={},nodes=[],conn={};
+ const uniq=b=>{let k=b,i=2;while(used[k])k=b+' '+i++;used[k]=1;return k};
+ S.nodes.forEach(n=>nm[n.id]=uniq(T[n.type].n.replace(/ \(.*\)/,'')));
+ const N=(name,type,v,p,pos,x)=>nodes.push({parameters:p,id:uid(),name,type:'n8n-nodes-base.'+type,typeVersion:v,position:pos,...x});
+ const link=(a,port,b)=>{const m=(conn[a]=conn[a]||{main:[]}).main;while(m.length<=port)m.push([]);m[port].push({node:b,type:'main',index:0})};
+ S.nodes.forEach(n=>{
+  const p=n.p,name=nm[n.id],pos=[Math.round(n.x*1.5),n.y],tpl2=t=>'`'+String(t).replace(/\{\{(.+?)\}\}/g,(m,e)=>'${'+e+'}')+'`';
+  if(T[n.type].t){
+   const k=n.type=='schedule'?['scheduleTrigger',1.2,{rule:{interval:[{field:'cronExpression',expression:p.cron||'0 9 * * *'}]}}]:n.type=='manual'?['manualTrigger',1,{}]:['webhook',2,{httpMethod:'POST',path:p.path||'flowlab-'+n.id,options:{}}];
+   N(name,k[0],k[1],k[2],pos,k[0]=='webhook'?{webhookId:uid()}:{});
+   const sn=uniq('Sample data '+n.id);let js='{}';try{js=JSON.stringify(JSON.parse(p.data||'{}'),null,2)}catch(e){}N(sn,'code',2,{jsCode:'return [{json: '+js+'}];'},[pos[0]+150,pos[1]]);
+   link(name,0,sn);src[n.id]=sn;
+   notes.add('Each trigger is followed by a "Sample data" Code node so your {{ $json }} expressions work while testing. Delete it for production (real webhook data arrives under $json.body).');
+   if(n.type=='form')notes.add('"Form submitted (GHL)" becomes a generic Webhook trigger; point your form tool at its URL, or use n8n\'s own Form Trigger.');
+   return}
+  switch(n.type){
+   case'set':N(name,'set',3.4,{assignments:{assignments:[{id:uid(),name:p.key,value:xp(p.value),type:'string'}]},includeOtherFields:true,options:{}},pos);break;
+   case'tag':N(name,'set',3.4,{assignments:{assignments:[{id:uid(),name:'tags',value:'={{ [...new Set([...($json.tags || []), '+tpl2(p.tag)+'])] }}',type:'array'}]},includeOtherFields:true,options:{}},pos);
+    notes.add('"Add tag" / "Remove tag" have no n8n equivalent, so they change a "tags" field. Replace them with your CRM node (HighLevel, HubSpot, etc.).');break;
+   case'untag':N(name,'set',3.4,{assignments:{assignments:[{id:uid(),name:'tags',value:'={{ ($json.tags || []).filter(t => t !== '+tpl2(p.tag)+') }}',type:'array'}]},includeOtherFields:true,options:{}},pos);
+    notes.add('"Add tag" / "Remove tag" have no n8n equivalent, so they change a "tags" field. Replace them with your CRM node (HighLevel, HubSpot, etc.).');break;
+   case'if':N(name,'if',2.2,{conditions:n8nCond(p,p.ic,notes),looseTypeValidation:true,options:{ignoreCase:!!p.ic}},pos);break;
+   case'switch':N(name,'switch',3.2,{mode:'rules',rules:{values:p.routes.map((rt,i)=>({conditions:n8nCond(rt,p.ic,notes),renameOutput:true,outputKey:rt.name||'Branch '+(i+1)}))},looseTypeValidation:true,
+     options:{fallbackOutput:p.fallback?'extra':'none',...(p.fallback?{renameFallbackOutput:'None'}:{}),ignoreCase:!!p.ic,allMatchingOutputs:!!p.all}},pos);
+    notes.add('Switch exports as an n8n Switch in Rules mode with named outputs. The None branch is its extra Fallback Output.');break;
+   case'code':N(name,'code',2,{mode:'runOnceForEachItem',jsCode:'const result = await (async () => {\n'+p.js+'\n})();\nreturn { json: result };'},pos);break;
+   case'wait':N(name,'wait',1.1,{resume:'timeInterval',amount:Number(p.amount)||0,unit:p.unit||'seconds'},pos,{webhookId:uid()});break;
+   case'sms':N(name,'twilio',1,{resource:'sms',operation:'send',from:p.from||'+10000000000',to:xp(p.to),message:xp(p.body)},pos);
+    notes.add('SMS uses the Twilio node: add Twilio credentials and use a From number you own.');notes.add('Twilio and Send Email nodes output their own result, not your original data. Reference earlier data with $("Node name").item.json.');break;
+   case'email':N(name,'emailSend',2.1,{fromEmail:p.from||'you@example.com',toEmail:xp(p.to||''),subject:xp(p.subj),emailFormat:'text',text:xp(p.body),options:{}},pos);
+    notes.add('Email uses the Send Email (SMTP) node: add SMTP credentials and a real From address.');notes.add('Twilio and Send Email nodes output their own result, not your original data. Reference earlier data with $("Node name").item.json.');break;
+   case'http':N(name,'httpRequest',4.2,{method:p.method,url:xp(p.url),options:{}},pos);
+    notes.add('HTTP Request puts the response fields directly on $json (FlowLab nests them under $json.response). Adjust Code nodes that read $json.response.');break;
+   default:N(name,'noOp',1,{},pos)}
+ });
+ S.edges.forEach(e=>link(src[e.from]||nm[e.from],e.port,nm[e.to]));
+ if(S.nodes.some(n=>n.type=='sms'||n.type=='email'))notes.add('FlowLab skips SMS and email when the data has "dnd": true. n8n does not; add an IF on dnd (or use your CRM\'s DND setting) before sending.');
+ return{wf:{name:'FlowLab export',nodes,connections:conn,pinData:{},settings:{executionOrder:'v1'},active:false},notes:[...notes]};
+}
+$('#exn').onclick=()=>save('workflow-n8n.json',JSON.stringify(toN8n().wf,null,2),'application/json');
+
+/* ---------- 13. Built-in docs (works offline) ---------- */
+/*DOCS-START*/
+const tb=(h,r)=>'<table><tr>'+h.map(x=>'<th>'+x+'</th>').join('')+'</tr>'+r.map(a=>'<tr>'+a.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('')+'</table>';
+const ol=a=>'<ol>'+a.map(x=>'<li>'+x+'</li>').join('')+'</ol>';
+
+const tsec=(id,t,o)=>`<h2 id="t-${id}">${t}</h2><p><b>Definition.</b> ${o.def}</p><p><b>Use it when</b> ${o.when}</p><p><b>Setting.</b> ${o.set}</p><h3>How to use it in FlowLab</h3>${ol(o.how)}<h3>Example</h3><p>${o.ex}</p><h3>In n8n</h3><p>${o.n8n}</p><h3>In GoHighLevel</h3><p>${o.ghl}</p><h3>Common mistakes</h3><ul>${o.bad.map(x=>'<li>'+x+'</li>').join('')}</ul>`;
+const DOCS={
+guide:()=>`<div><h2>Quick start</h2>`+ol([
+ 'Pick a workflow from <b>Load an example…</b> or click nodes in the left palette to add them.',
+ 'Drag nodes to move them. Connect by dragging from a node\'s <b>right dot</b> to another node\'s <b>left dot</b>. IF has two right dots (true, false); a Switch has one per branch plus <b>None</b>. Click a line to delete it. Use the zoom buttons or Ctrl + mouse wheel for big flows.',
+ 'Click a node to edit it in the right panel. Use <code>{{ $json.field }}</code> to reuse data from earlier steps.',
+ 'Press <b>Run workflow</b> (or Ctrl+Enter). The <b>Test panel</b> opens and plays the run: the form or request that started it, the texts arriving on the contact\'s phone, the emails in each inbox, and the contact record with its tags, fields and activity.',
+ 'Nodes turn green (ok), amber (warning, such as an empty field or a skipped message) or red (error). Click any node afterwards to see the exact data that went in and came out, like n8n\'s execution view.',
+ 'Open the bottom tabs: <b>Workflow JSON</b>, <b>Compiled code</b> (a standalone Node.js script) and <b>n8n JSON</b>.'])+`
+<h2>The Test panel</h2>`+tb(['Part','What it shows'],[
+ ['Form / request / schedule','What starts the run. A form trigger becomes a real form built from your sample fields: change the values and press <b>Submit</b>. A webhook shows the POST request with an editable body. A schedule shows its cron rule and the next real run time.'],
+ ['Contact\'s phone','Each SMS as the contact receives it, with segment count (texts are billed per 160-character segment, or 70 when they contain emoji). Messages to other numbers, such as staff, get their own tab.'],
+ ['Email inboxes','Each email in the recipient\'s inbox. Click one to read it. Internal emails (to your team) are labelled.'],
+ ['Contact record','What a CRM such as GoHighLevel would store: tags, fields, and an activity timeline.'],
+ ['Clock','Simulated time. Wait steps fast-forward it, so a 3-day drip plays in seconds. Use the speed menu for slow, normal or instant runs.']])+`
+<p>The run copies real-world rules: SMS numbers need international format (<code>+63...</code>), empty recipients fail, contacts with <code>"dnd": true</code> are not messaged, HTTP errors stop the branch, and empty template fields are flagged. See <b>Conditions</b> for the full list.</p>
+<h2>How data flows</h2>
+<p>A trigger starts the run with its sample data, one object such as <code>{"name":"Ada","score":72}</code>. Every node receives that object, may change it, and passes it on. A <b>Set field</b> node that writes <code>status</code> means every later node can read <code>{{ $json.status }}</code>. An <b>IF</b> sends the object out of one of its two outputs; a <b>Switch</b> picks a branch. A node with nothing connected after it ends that branch.</p>
+<h2>Using the generator</h2>
+<p>Type a sentence in the top box and press Enter. Steps are split on commas, "then", or "->". Recognised phrases: <code>when form submitted</code>, <code>webhook</code>, <code>every day</code>, <code>if score greater than 50 and phone is not empty</code>, <code>if has tag customer</code>, <code>add tag hot-lead</code>, <code>remove tag nurture</code>, <code>wait 2 days</code>, <code>send sms Hello {{ $json.name }}</code>, <code>send email ...</code>, <code>set status to won</code>, a URL (HTTP request), <code>log</code>. The generator builds a straight chain (IF continues from its true output), so add false branches by hand.</p>
+<h2>Suggested learning path</h2>`+ol([
+ 'Run all the examples. For each, change one value in the Test panel form or request and run again to see another branch.',
+ 'Read the <b>Conditions</b> tab, then load <i>Overdue invoice escalation</i> and flip "Send to every matching branch" to see how GHL and Zapier differ.',
+ 'Rebuild the lead qualification example from an empty canvas without looking.',
+ 'Read the <b>Compiled code</b> tab. Each node is one function, the edge list is a plain array, and <code>walk()</code> is the whole engine. Run it with <code>node workflow.js --fast</code>, then try <code>--serve</code>.',
+ 'Add a node type: put an entry in <code>T</code>, a <code>case</code> in <code>exec()</code> (runs in the browser), and a <code>case</code> in <code>body()</code> (generates code).',
+ 'Export to n8n, run <code>npx n8n</code> locally, import the file and fix what the notes list.',
+ 'Rebuild one flow by hand in a GoHighLevel trial account using the GHL tab as a map. Then read <b>Other tools</b>.'])+`
+<div class="note"><b>Limits.</b> FlowLab passes one object at a time (n8n passes lists of items), SMS, email and waits are simulated, there are no credentials, and webhooks don't listen on a real URL inside the editor (the compiled script's <code>--serve</code> does).</div></div>`,
+
+cond:()=>`<div><h2>How conditions work</h2>
+<p>A condition takes a <b>value</b> (usually an expression like <code>{{ $json.score }}</code>), an <b>operator</b> and, for most operators, a value to compare to. Several conditions can be joined with <b>AND</b> (all must be true) or <b>OR</b> (one is enough). Click the AND/OR pill between two conditions to switch. FlowLab, n8n, GoHighLevel, Zapier and Make all work this way; only the labels differ.</p>
+<p>FlowLab's condition engine copies n8n's IF and Switch nodes with <i>Convert types where required</i> turned on: the same operators, the same type conversions and the same error wording. The compiled script uses the exact same code.</p>
+<h2>IF or Switch?</h2>`+tb(['','FlowLab IF','FlowLab Switch'],[
+ ['Outputs','two: true and false','one per branch, plus an optional <b>None</b> branch'],
+ ['n8n','IF node','Switch node in Rules mode; None = Fallback Output "Extra Output"'],
+ ['GoHighLevel','If/Else with one branch; the other path is None','If/Else with several branches (up to 10 outcomes) and the None branch'],
+ ['Zapier','Filter (go on or stop), or Paths','Paths, with an optional fallback path'],
+ ['Make','A filter on a route','Router with a filter on each route and an optional fallback route']])+`
+<h2>Which branch runs when several match?</h2>
+<p>This is the difference that surprises people most when they change tools.</p>`+tb(['Tool','Rule'],[
+ ['GoHighLevel If/Else','Branches are checked top to bottom and the contact takes the <b>first</b> branch that is true. If none is true, it takes <b>None</b>.'],
+ ['n8n Switch','Only the <b>first</b> matching output, unless you turn on <i>Send data to all matching outputs</i>. Items that match nothing are dropped unless you set a Fallback Output.'],
+ ['Zapier Paths','<b>Every</b> path whose rules are met runs. The fallback path runs only when no other path does.'],
+ ['Make Router','Routes run one after another in the order you set, and data goes down <b>every</b> route whose filter passes. The fallback route takes what fits no other route.'],
+ ['FlowLab Switch','First match, like GHL and n8n. Tick <b>Send to every matching branch</b> to behave like Zapier and Make.']])+`
+<p>Try it: load <i>Overdue invoice escalation</i>. 20 days overdue matches both "over 14 days" and "over 7 days". With first-match only the final notice goes out; with every-match the client also gets the softer reminder. When you rely on first-match, put the strictest rule first.</p>
+<h2>Operators</h2>
+<p class="hint">GHL's operators depend on the field type and change over time. These names are confirmed in GHL's help center: Is / Is not, Includes / Does not include (tags and multi-choice fields), Is empty / Is not empty, Is after / Is before. Check the others in your account's If/Else editor.</p>`+tb(['FlowLab','n8n (type → operator)','GoHighLevel (closest)'],OPS.map(o=>['<b>'+o[2]+'</b> → '+o[1],N8T[o[4]]+' → '+N8L[o[5]],o[6]]))+`
+<h2>Types matter</h2>
+<ul><li><b>Text vs number.</b> Compared as text, <code>"9"</code> comes after <code>"10"</code>, because text is compared character by character. Use a Number operator for amounts, scores and counts. Number operators turn <code>"72"</code> into 72 for you, as n8n does.</li>
+<li><b>Conversion errors.</b> A number check on text such as <code>"abc"</code> stops the run with <i>Conversion error: the string 'abc' can't be converted to a number</i>, the same wording n8n uses. Fix the data or pick another operator.</li>
+<li><b>Empty values.</b> A number or date check on an empty or missing field is simply false. FlowLab warns you, because this is the most common silent bug.</li>
+<li><b>exists vs is not empty.</b> A form that sends <code>"phone": ""</code> has a phone field that <i>exists</i> but <i>is empty</i>. To ask "can I text this person?", use <b>is not empty</b>.</li>
+<li><b>True / false.</b> <code>true</code>, <code>"true"</code>, <code>1</code> and <code>"1"</code> count as true. n8n treats any other non-empty text as true too, so <code>"no"</code> is <i>true</i>. FlowLab copies this and warns you; for yes/no text use <b>Text → is equal to "yes"</b>.</li>
+<li><b>Lists.</b> Tags are a list. Use the <b>List / tags</b> operators (<b>contains item</b> is GHL's <i>Includes</i>). Checked as text, an empty list <code>[]</code> is not empty.</li>
+<li><b>Letter case.</b> Comparisons are case-sensitive unless you tick <b>Ignore case</b> (n8n's <i>Ignore Case</i> option). <code>"Pro"</code> is not <code>"pro"</code>.</li>
+<li><b>One expression keeps its type.</b> A value that is only <code>{{ $json.tags }}</code> stays a list and <code>{{ $json.score }}</code> stays a number. Mixed with other text, such as <code>Score: {{ $json.score }}</code>, it becomes text.</li></ul>
+<h2>Real-world failures the test run copies</h2>`+tb(['Situation','What real tools do','FlowLab'],[
+ ['SMS to a number without a country code (09171234567)','The SMS provider rejects it','Red node: invalid \'To\' phone number'],
+ ['Empty phone or email','The step fails; nothing is sent','Red node with the reason'],
+ ['Contact has Do Not Disturb on (<code>"dnd": true</code>)','The CRM blocks the message','Step skipped (amber); the run continues'],
+ ['A template uses a field that does not exist','The message goes out with a gap: "Hi ,"','Amber warning naming the empty field'],
+ ['HTTP request answers 404 or 500','n8n stops with an error by default','Red node'],
+ ['Code returns nothing','n8n reports an error','Red node'],
+ ['Adding a tag the contact already has','No duplicate','Logged, no duplicate']])+`
+<p>When a node fails, FlowLab stops that branch. n8n stops the whole execution unless the node's <i>On Error</i> setting says to continue; each tool has its own error setting, so check it.</p></div>`,
+
+tools:()=>`<div><h2>Will what I learn here work in other tools?</h2>
+<p><b>The ideas, yes. The buttons and names, no.</b> Every automation tool is made of the same parts: an event starts the flow, data moves from step to step, conditions choose a path, waits spread steps out over time, and actions talk to the outside world. If you can design and debug a flow here, you can rebuild it in any of them. What changes is the vocabulary, where the data lives, and a few rules about branches and errors.</p>
+<h2>The same idea in each tool</h2>`+tb(['Idea','FlowLab','n8n','GoHighLevel','Zapier','Make'],[
+ ['Start','Trigger','Trigger node','Workflow trigger','Trigger (first step)','First module (trigger)'],
+ ['Insert data','<code>{{ $json.name }}</code>','<code>{{ $json.name }}</code>','<code>{{contact.first_name}}</code>','Pick a field from an earlier step','Map a field from an earlier module'],
+ ['Two-way decision','IF','IF','If/Else','Filter, or Paths','Filter'],
+ ['Several branches','Switch','Switch','If/Else branches','Paths','Router'],
+ ['When several match','first match (option: all)','first match (option: all)','first match','all that match','all that match'],
+ ['Delay','Wait','Wait','Wait','Delay by Zapier','Sleep (short pauses)'],
+ ['Your own logic','Code','Code','Custom Code (usually premium)','Code by Zapier','Built-in functions in mappings'],
+ ['Call any API','HTTP request','HTTP Request','Custom Webhook (usually premium)','Webhooks by Zapier','HTTP module'],
+ ['What moves between steps','one object','a list of items','the contact record','fields from earlier steps','bundles']])+`
+<p class="hint">Microsoft Power Automate (Condition, Switch, Delay), HubSpot workflows (if/then branches, delays) and ActiveCampaign automations (If/Else, Wait) follow the same pattern.</p>
+<h2>What carries over everywhere</h2>
+<ul><li>Thinking in <b>trigger → conditions → actions</b>, and drawing the flow before building it.</li>
+<li>Knowing where each value comes from, and testing with realistic sample data, including empty and odd values.</li>
+<li>Condition logic: AND vs OR, branch order, types (text vs number), empty vs missing, letter case.</li>
+<li>Timing: waits, drips, reminders before an event, and stopping a sequence when the goal is reached.</li>
+<li>Reliability: duplicate events, steps that are safe to repeat, and what happens when a step fails.</li>
+<li>Messaging rules: consent, opt-out text, Do Not Disturb, sensible sending hours.</li></ul>
+<h2>What you will relearn in each tool</h2>
+<ul><li>Where data lives: n8n passes lists of items (one run handles many), GHL works on one contact at a time, Zapier and Make map fields from numbered earlier steps.</li>
+<li>Expression syntax: <code>{{ $json.x }}</code> in n8n, <code>{{contact.x}}</code> in GHL, picked or mapped fields in Zapier and Make.</li>
+<li>Branch rules (first match or all matches) and error behaviour (stop, skip or continue).</li>
+<li>Pricing and limits: tasks, operations, executions, premium actions, per-message SMS and email charges.</li>
+<li>The exact names of triggers and actions, which change as the tools update.</li></ul>
+<h2>Next steps</h2>`+ol(['Get comfortable here with the examples and the Test panel.','Export to n8n and run it there (<code>npx n8n</code>): the closest match to FlowLab.','Rebuild one flow in a GoHighLevel trial, replacing <code>{{ $json.x }}</code> with merge fields.','Rebuild the same flow on a free Zapier or Make plan and notice the branch rule difference.'])+`</div>`,
+
+trig:()=>`<div><h2>What is a trigger?</h2>
+<p>A <b>trigger</b> is the event that starts a workflow. Every workflow needs one. A trigger has no input dot (nothing comes before it) and its output is the <b>starting data</b> that every later node can read through <code>{{ $json.field }}</code>. FlowLab has four triggers (amber nodes). Select one on the canvas and press <b>Full guide</b> in the right panel to jump to its section here.</p>
+<h2>Which trigger do I need?</h2>`+tb(['Situation','Trigger'],[
+ ['I am learning or testing a flow with my own data','<a href="#t-manual" data-j="t-manual">Manual start</a>'],
+ ['Someone fills in a form, survey or booking page','<a href="#t-form" data-j="t-form">Form submitted</a>'],
+ ['Another app should tell my flow something happened (payment, call, order)','<a href="#t-webhook" data-j="t-webhook">Webhook</a>'],
+ ['Something must happen on a clock (daily report, reminders, polling)','<a href="#t-schedule" data-j="t-schedule">Schedule</a>']])+`
+<div class="note">In FlowLab, <b>Run workflow</b> always starts from the first trigger on the canvas and feeds it the sample data you typed. In the Test panel you can also submit the form, send the webhook request or fire a schedule tick with your own values. Nothing listens on a real URL or clock inside the editor; real listening and ticking are covered in each section below.</div>`+
+tsec('manual','Manual start',{
+ def:`Starts only when <i>you</i> press Run. It has no outside event behind it.`,
+ when:`you are learning, debugging one node, running a one-off job, or testing a branch with specific data.`,
+ set:`<b>Starting data (JSON)</b>: the object the run begins with, for example <code>{"email":"ada@example.com"}</code>. Keys need double quotes.`,
+ how:[`Add <b>Manual start</b> from the palette.`,`Type the starting data as valid JSON.`,`Connect its right dot to your first action.`,`Press <b>Run workflow</b>. Change the JSON and run again to test other cases.`],
+ ex:`The <i>API enrichment</i> example starts with an email address and looks up more data from it.`,
+ n8n:`<b>Manual Trigger</b>. It outputs nothing, so add a Code or Edit Fields node to supply test data (the FlowLab export does this for you with a "Sample data" node). You run it with <b>Execute Workflow</b>.`,
+ ghl:`There is no direct equivalent. The closest options are adding a contact to a workflow by hand or in bulk, or using the workflow's test option with a test contact.`,
+ bad:[`Invalid JSON (single quotes, trailing commas) makes the run fail at the first node.`,`Expecting a manual trigger to run by itself: it never does.`]}) +
+tsec('form','Form submitted (GHL)',{
+ def:`Fires when a person submits a form or survey. The starting data is what they typed, one key per field.`,
+ when:`you capture leads, quote requests, sign-ups or bookings and want an instant response: score, tag, text, email.`,
+ set:`<b>Form title</b> and <b>Sample submission (JSON)</b>. Use the same field names your real form would produce, such as <code>name</code>, <code>email</code>, <code>phone</code>, plus any custom answers. Numbers become number boxes, <code>true</code>/<code>false</code> become checkboxes, and a list such as <code>"tags":["vip"]</code> stands for tags the contact already has.`,
+ how:[`Add <b>Form submitted (GHL)</b>.`,`Write a sample submission with realistic values, including optional fields that are sometimes empty.`,`Connect an IF with <b>is not empty</b> on <code>{{ $json.phone }}</code> if later steps need a phone number.`,`Run it, then edit the form in the Test panel and press <b>Submit</b> to try other answers.`],
+ ex:`<i>Lead qualification and routing</i> scores the submission, then sends hot leads a text within seconds.`,
+ n8n:`Use a <b>Webhook</b> trigger and point your form tool at its URL (the FlowLab export does this), or n8n's own <b>Form Trigger</b>, which hosts a simple form for you. Form fields arrive under <code>$json.body</code> for webhooks.`,
+ ghl:`Trigger <b>Form Submitted</b> (and the similar Survey Submitted). Choose the form, optionally filter by which form or page. Fields are saved to the contact, so later steps use merge fields like <code>{{contact.email}}</code>.`,
+ bad:[`Sample field names that differ from the real form, so expressions return empty text (FlowLab flags this in amber).`,`Assuming every submission has a phone number.`,`Not planning for duplicate submissions (the same person submitting twice).`]}) +
+tsec('webhook','Webhook',{
+ def:`A web address that another system calls (usually an HTTP POST with JSON) when something happens. The starting data is the request body.`,
+ when:`an outside app can send events: a payment, an order, a booking, a missed call, a form tool, a support ticket.`,
+ set:`<b>URL path</b> (optional) and <b>Sample body (JSON)</b>: what the other system would send, for example <code>{"event":"order.paid","amount":120}</code>.`,
+ how:[`Add <b>Webhook (n8n)</b> and paste a real example payload from the sending app's documentation as the sample body.`,`Branch on <code>{{ $json.event }}</code> with an IF or Switch if the app sends several event types.`,`Run in FlowLab, or edit the request body in the Test panel and press <b>Send request</b>.`,`To receive <i>real</i> calls offline, use the compiled script with <code>--serve</code> (see below).`],
+ ex:`<i>Paid order: totals and VIP treatment</i> receives an order, calculates tax and rewards big orders.`,
+ n8n:`<b>Webhook</b> node. It shows a <b>Test URL</b> (works while the editor waits for a call) and a <b>Production URL</b> (works only when the workflow is <b>Active</b>). You choose the HTTP method and path. Body fields are under <code>$json.body</code>, query parameters under <code>$json.query</code>.`,
+ ghl:`Trigger <b>Inbound Webhook</b>, usually a premium trigger. GHL gives you a URL; after the first call you map the incoming fields to use them.`,
+ bad:[`In n8n, reading <code>$json.name</code> when the data is at <code>$json.body.name</code>.`,`Testing the production URL while the workflow is inactive.`,`Leaving the endpoint open: check a secret token or signature from the sender.`,`Doing slow work before answering. Senders may retry, so the same event can arrive twice; make steps safe to repeat.`]})+`
+<h3>Receive real webhooks and form posts offline (optional)</h3>
+<p>Click <b>Download compiled .js</b>, then start it in server mode:</p>
+<pre>node workflow.js --serve 3000</pre>
+<p>For a <b>Form submitted</b> trigger, open <code>http://localhost:3000</code> in your browser: you get a real form built from your sample fields, and submitting it runs the workflow. For any trigger you can send JSON from another terminal: <code>curl -X POST localhost:3000/webhook -H "Content-Type: application/json" -d '{"name":"Ada","score":80}'</code> (quotes differ in Windows PowerShell; you can also use <code>--data data.json</code> for a one-off run). The script answers <code>{"message":"Workflow was started"}</code> straight away, then runs the steps and prints every SMS and email in the terminal.</p>`+
+tsec('schedule','Schedule',{
+ def:`Starts on a clock: every N minutes, daily at 9 AM, weekdays only, and so on. It carries no data of its own, only the fact that it is time.`,
+ when:`work should happen regularly: daily reports, reminder checks, birthday lookups, polling an API, cleaning up old records.`,
+ set:`<b>Cron rule</b>, for example <code>0 9 * * *</code> (daily at 09:00), and <b>Tick data (JSON)</b>: a stand-in for the empty tick, for example <code>{"tick":1}</code>. Later nodes (HTTP request, Code) must fetch or create the real data.`,
+ how:[`Add <b>Schedule</b> and set the cron rule. The Test panel shows it in words and the next real run time.`,`Connect a Code or HTTP node that gets the data to work on, then an IF to decide who qualifies.`,`Run once in FlowLab to simulate a single tick.`,`To run it for real offline, run the compiled script from your computer's scheduler.`],
+ ex:`<i>Birthday promo</i> checks every day whether today matches a contact's birthday.`,
+ n8n:`<b>Schedule Trigger</b>: pick an interval or a cron expression and check the workflow's timezone (the FlowLab export uses your cron rule). It runs only while the workflow is <b>Active</b>.`,
+ ghl:`GHL has no cron trigger. It uses contact and date based triggers such as birthday or custom date reminders, and Wait steps for delays (wait until a time, or a number of days).`,
+ bad:[`Forgetting that a schedule has no data, so there is nothing to act on until a later node fetches it.`,`Mixing up timezones (server time versus your local time).`,`A run that takes longer than the interval, so runs overlap.`,`In n8n, not switching the workflow to Active.`]})+`
+<h3>Running a compiled workflow on a schedule</h3>`+tb(['System','Example (daily at 9:00)'],[
+ ['Linux / macOS cron','<code>0 9 * * * node /path/to/workflow.js</code> (add with <code>crontab -e</code>)'],
+ ['Windows','Task Scheduler: create a daily task running <code>node C:\\path\\workflow.js</code>']])+`
+<h3>Cron cheat-sheet</h3>`+tb(['Pattern','Meaning'],[['<code>*/15 * * * *</code>','every 15 minutes'],['<code>0 * * * *</code>','every hour on the hour'],['<code>0 9 * * *</code>','every day at 09:00'],['<code>0 9 * * 1-5</code>','weekdays at 09:00'],['<code>0 0 1 * *</code>','midnight on the 1st of each month']])+`
+<p>The five fields are minute, hour, day of month, month, day of week.</p>
+<h2>Other triggers you will meet in n8n</h2>`+tb(['Trigger','Starts when','Typical use'],[
+ ['Webhook','another system calls its URL','payments, forms, custom apps'],
+ ['Schedule Trigger','the clock matches','reports, polling, reminders'],
+ ['Form Trigger','someone submits the form n8n hosts','simple intake forms'],
+ ['Email Trigger (IMAP)','a new email arrives in a mailbox','support inboxes, invoices'],
+ ['App triggers (Gmail, Telegram, GitHub, Google Sheets...)','something changes in that app','react to new rows, messages, issues'],
+ ['Execute Workflow Trigger','another workflow calls this one','reusable sub-workflows'],
+ ['Error Trigger','another workflow fails','alerts and clean-up'],
+ ['Chat Trigger','someone sends a message in n8n chat','AI assistants']])+`
+<p><b>Polling versus instant:</b> some app triggers check the app every few minutes (polling), others receive an instant webhook. Instant ones react faster; polling ones are easier to set up.</p>
+<h2>Other triggers you will meet in GoHighLevel</h2>
+<p class="hint">Names vary by account and version. Confirm in your workflow trigger list.</p>`+tb(['Trigger','Starts when','Typical use'],[
+ ['Contact Created','a contact is added from any source','welcome message, tagging by source'],
+ ['Contact Tag','a tag is added or removed','hand-offs between workflows'],
+ ['Form Submitted / Survey Submitted','a form or survey is sent','lead capture and qualification'],
+ ['Appointment status','a booking is created, confirmed, cancelled or marked no-show','reminders, no-show recovery'],
+ ['Opportunity / pipeline stage changed','a deal moves or changes status','sales follow-up, win notices'],
+ ['Customer Replied','the contact answers by SMS, email or chat','stop a sequence, alert a rep'],
+ ['Call / missed call','a call ends or is missed','text-back'],
+ ['Inbound Webhook','another system calls GHL','outside apps and payments (usually premium)'],
+ ['Birthday / custom date reminder','a date on the contact arrives','promos and renewals'],
+ ['Payments / order submitted','a purchase happens','receipts, onboarding']])+`
+<p><b>How to use any trigger well:</b> add a filter so it only enrolls the right contacts, send a test event before publishing, and plan what happens if the same contact is enrolled twice.</p></div>`,
+
+n8n:()=>`<div><div class="note">n8n is updated often. Menu names and node versions here are a guide; confirm details in the official docs (docs.n8n.io).</div>
+<h2>Core ideas</h2>
+<p>An n8n <b>workflow</b> is nodes joined by connections. A <b>trigger</b> node starts it. Data moves as a <b>list of items</b>, each shaped <code>{ json: {...} }</code>, and most nodes run once <i>per item</i>. That is the biggest difference from FlowLab, which carries a single object. Each run is stored as an <b>execution</b> you can inspect afterwards, much like clicking a node after a FlowLab test run.</p>
+<h2>Expression cheat-sheet</h2>`+tb(['Goal','Expression'],[
+ ['Field of the current item','<code>{{ $json.name }}</code>'],
+ ['Webhook body field','<code>{{ $json.body.email }}</code>'],
+ ['Data from an earlier node','<code>{{ $(\'Edit Fields\').item.json.name }}</code>'],
+ ['All items from the previous node','<code>{{ $input.all() }}</code>'],
+ ['Fallback value','<code>{{ $json.company || \'unknown\' }}</code>'],
+ ['Math / any JavaScript','<code>{{ $json.price * 1.12 }}</code>'],
+ ['Current date','<code>{{ $now.toFormat(\'yyyy-LL-dd\') }}</code>']])+`
+<p>In an exported JSON file a value is an expression when the string starts with <code>=</code>, for example <code>"=Hi {{ $json.name }}"</code>. In the editor you switch a field to <i>Expression</i> mode.</p>
+<h2>FlowLab nodes and their n8n equivalents</h2>`+tb(['FlowLab','n8n node','Notes'],[
+ ['Manual start','Manual Trigger','Starts a test run from the editor.'],
+ ['Form submitted / Webhook','Webhook','Has a <b>Test URL</b> (only while listening) and a <b>Production URL</b> (only when the workflow is active).'],
+ ['Schedule','Schedule Trigger','Interval or cron expression.'],
+ ['Set field','Edit Fields (Set)','Turn on "Include Other Input Fields" to keep existing data.'],
+ ['IF','IF','Output 0 = true, output 1 = false. Several conditions joined by AND or OR; options <i>Ignore Case</i> and <i>Convert types where required</i>.'],
+ ['Switch','Switch (Rules mode)','One routing rule per output; rename outputs; <i>Fallback Output</i> = FlowLab\'s None; <i>Send data to all matching outputs</i> = "every matching branch".'],
+ ['Code','Code','Choose "Run Once for Each Item" (return <code>{ json: {...} }</code>) or "All Items" (return a list).'],
+ ['Wait','Wait','Pauses the execution, then resumes.'],
+ ['Send SMS','Twilio','Needs credentials and a From number.'],
+ ['Send email','Send Email','Needs SMTP credentials. Set <i>Email Format</i> to Text for a plain body (the export does this).'],
+ ['Add tag / Remove tag','Your CRM node','For example HighLevel or HubSpot.'],
+ ['HTTP request','HTTP Request','Response fields land directly on <code>$json</code>.'],
+ ['Log','No Operation','Placeholder node; check the output in the editor.']])+`
+<h2>Patterns you will meet</h2>
+<ul><li><b>Webhook, IF, action:</b> receive an event, check a condition, act. The most common shape.</li>
+<li><b>Switch instead of chained IFs:</b> one node with named outputs is easier to read than IF inside IF.</li>
+<li><b>Merge:</b> use the Merge node when two branches must come back together and combine their data.</li>
+<li><b>Looping:</b> use <b>Loop Over Items</b> (batches) when you must process a list in chunks or call an API with rate limits.</li>
+<li><b>Retries:</b> in a node's Settings enable <b>Retry On Fail</b>. Set <b>On Error</b> to continue when one failure should not stop the run.</li>
+<li><b>Error handling:</b> create a workflow starting with <b>Error Trigger</b> and select it as the Error Workflow in the main workflow's settings.</li>
+<li><b>Reuse:</b> <b>Execute Workflow</b> calls another workflow like a function.</li></ul>
+<h2>Testing and debugging</h2>
+<ul><li><b>Execute Workflow</b> runs it once from the editor. Click any node to see its input and output.</li>
+<li><b>Pin data</b> freezes a node's output so you can test later nodes without re-calling APIs.</li>
+<li>Webhook test URLs only work while the editor is waiting; production URLs only work after you switch the workflow to <b>Active</b>.</li></ul>
+<h2>Run n8n on your machine</h2>
+<p>With Node.js installed: <code>npx n8n</code>, then open <code>http://localhost:5678</code>. With Docker: <code>docker run -it --rm -p 5678:5678 docker.n8n.io/n8nio/n8n</code>.</p>
+<h2>Importing a FlowLab export</h2>`+ol(['Click <b>Export n8n JSON</b> in FlowLab.','In n8n open a new workflow, then use the top-right menu and choose <b>Import from file</b> (or paste the JSON onto the canvas).','Read the "Notes before importing" list in the <b>n8n JSON</b> tab and fix each item: add credentials, replace placeholders, delete the Sample data nodes.','Run with <b>Execute Workflow</b> and compare with FlowLab\'s log.'])+`
+<h2>Common mistakes</h2>
+<ul><li>Forgetting that nodes run per item, so a Code node written for one object may need "Run Once for Each Item".</li>
+<li>Reading webhook data from <code>$json.name</code> instead of <code>$json.body.name</code>.</li>
+<li>Testing a production webhook URL while the workflow is inactive.</li>
+<li>Comparing numbers with a String operator, or yes/no text with a Boolean operator.</li></ul></div>`,
+
+ghl:()=>`<div><div class="note">GoHighLevel's menus, trigger names and plan features change often and differ by account. Treat this as a map and confirm each item in your account and the official help center (help.gohighlevel.com).</div>
+<h2>Core ideas</h2>
+<p>A GHL <b>workflow</b> (Automation, then Workflows) is built around a <b>contact</b>. One or more <b>triggers</b> enroll a contact, then <b>actions</b> run in order for that contact. Data is the contact's standard and custom fields, tags, opportunities and appointments, not free-form JSON as in n8n. FlowLab's <b>contact record</b> in the Test panel shows that view. A workflow only runs when it is set to <b>Published</b>; use the built-in test option with a test contact before publishing.</p>
+<h2>FlowLab concepts and their GHL equivalents</h2>`+tb(['FlowLab','GHL (typical name)','Notes'],[
+ ['Form submitted','Trigger: Form Submitted','Pick the form or survey. Fields map onto the contact.'],
+ ['Webhook','Trigger: Inbound Webhook','Usually a premium trigger; check your plan.'],
+ ['Schedule','Date-based triggers (e.g. Birthday Reminder, Custom Date Reminder)','GHL is event and contact driven, not cron driven.'],
+ ['Set field','Action: Update Contact Field','The field must exist (create custom fields first).'],
+ ['IF','Action: If/Else with one branch','The other path is the None branch. Conditions use contact fields, tags, time and other workflow data, grouped with AND / OR.'],
+ ['Switch','Action: If/Else with several branches','Up to 10 outcomes. Checked top to bottom; the contact takes the first branch that is true, otherwise None.'],
+ ['Wait','Action: Wait','Wait a time span, until a date, or until an event happens.'],
+ ['Send SMS','Action: Send SMS','Respect Do Not Disturb and opt-in rules.'],
+ ['Send email','Action: Send Email','Pick or write a template.'],
+ ['Add tag / Remove tag','Action: Add Tag / Remove Tag','Tags are the usual way to trigger other workflows.'],
+ ['HTTP request','Action: Custom Webhook','Usually a premium action.'],
+ ['Code','Action: Custom Code','Usually a premium action.'],
+ ['Log','Action: Add Note / Internal Notification','']])+`
+<h2>Conditions in If/Else</h2>
+<p>Confirmed operator names include <b>Is / Is not</b>, <b>Includes / Does not include</b> (tags and multi-choice fields), <b>Is empty / Is not empty</b> and <b>Is after / Is before</b> (dates and time). Others depend on the field type. FlowLab's <b>List / tags → contains item</b> is GHL's <i>Includes</i>; see the <b>Conditions</b> tab for the full map. One known trap: "Does not include" on two tags joined with AND is false if <i>either</i> tag is present.</p>
+<h2>Merge fields</h2>
+<p>GHL inserts contact data with merge fields instead of <code>{{ $json.x }}</code>.</p>`+tb(['FlowLab','GHL merge field'],[
+ ['<code>{{ $json.name }}</code>','<code>{{contact.first_name}}</code> or <code>{{contact.name}}</code>'],
+ ['<code>{{ $json.email }}</code>','<code>{{contact.email}}</code>'],
+ ['<code>{{ $json.phone }}</code>','<code>{{contact.phone}}</code>'],
+ ['Today\'s date','<code>{{right_now.date}}</code>'],
+ ['Custom field','The merge key shown for that field in Settings, Custom Fields']])+`
+<h2>Rebuilding a FlowLab design in GHL</h2>`+ol([
+ 'Automation, Workflows, <b>Create Workflow</b>, start from scratch.',
+ 'Add the trigger that matches your first FlowLab node.',
+ 'Add each action in the same order. Replace <code>{{ $json.x }}</code> with merge fields.',
+ 'For an IF or Switch, add If/Else and build each branch from contact fields or tags. FlowLab\'s computed values (like <code>score</code>) must first be saved to a custom field with Update Contact Field.',
+ 'Test with a test contact, check the enrollment history, then switch to <b>Published</b>.'])+`
+<h2>GHL versus n8n at a glance</h2>`+tb(['','n8n','GoHighLevel'],[
+ ['Data model','Lists of JSON items','Contact fields, tags, opportunities'],
+ ['Hosting','Self-host or cloud','Hosted SaaS only'],
+ ['Code','Code node built in','Custom Code is usually a paid add-on'],
+ ['Strength','Any API, any shape of data','Messaging, pipelines, calendars, funnels in one place'],
+ ['Cost model','Free to self-host; pay for hosting','Subscription plus per-use charges for SMS, email and premium actions']])+`
+<h2>Good habits</h2>
+<ul><li>Add a Wait before follow-up messages and keep messages inside sensible sending hours.</li>
+<li>Only message contacts who opted in, and honour opt-outs and Do Not Disturb. Check the rules for your country.</li>
+<li>Use tags as hand-offs between workflows (for example <code>hot-lead</code> triggers a sales workflow).</li>
+<li>Use a goal event or a stop condition so contacts who already booked do not receive the rest of a nurture sequence.</li></ul></div>`,
+
+ref:()=>`<div><h2>Node reference</h2>`+tb(['Type','Name','Kind','Settings','Outputs'],Object.entries(T).map(([k,d])=>['<code>'+k+'</code>',d.n,d.t?'trigger':d.g?'logic':'action',d.c?(k=='if'?'conditions (AND / OR), ignore case':'branches with conditions, None branch, every-match, ignore case'):d.f.map(f=>f[1]).join(', ')||'none',k=='if'?'2 (true, false)':k=='switch'?'one per branch + None':1]))+`
+<h2>Condition operators</h2><p>See the <b>Conditions</b> tab for how they map to n8n and GoHighLevel.</p>`+tb(['Group','Operator','True when'],OPS.map(o=>[o[2],o[1],{str_eq:'the texts are identical',str_ne:'the texts differ',str_has:'the text includes the other text',str_nhas:'the text does not include it',str_sw:'the text begins with it',str_ew:'the text ends with it',str_re:'the regular expression matches (/pattern/flags also works)',num_eq:'the numbers are equal',num_ne:'the numbers differ',num_gt:'left is larger',num_lt:'left is smaller',num_gte:'left is larger or equal',num_lte:'left is smaller or equal',date_after:'the left date is later',date_before:'the left date is earlier',bool_true:'the value is true, "true" or 1',bool_false:'the value is false, missing, "false", 0 or empty',arr_has:'the list includes the item',arr_nhas:'the list does not include it',arr_len_gt:'the list has more items than the number',arr_empty:'the list has no items',arr_nempty:'the list has items',exists:'the field is present (even if it is "")',nexists:'the field is missing or null',empty:'the value is missing or ""',nempty:'the value has at least one character'}[o[0]]]))+`
+<h2>Expressions</h2>
+<p><code>{{ ... }}</code> holds one JavaScript expression with <code>$json</code> in scope: <code>{{ $json.price * 2 }}</code>, <code>{{ $json.name.toUpperCase() }}</code>, <code>{{ $json.tags ? $json.tags.length : 0 }}</code>. If it throws or is empty, it becomes an empty string and FlowLab warns you. A value that is only one <code>{{ }}</code> keeps its type in conditions and Set field. Code nodes are not templated: write normal JavaScript, read <code>$json</code> and <code>return</code> an object.</p>
+<h2>Files</h2>`+tb(['File','What it is'],[
+ ['<code>workflow.json</code>','FlowLab\'s own format: <code>{nodes:[{id,type,p,x,y}], edges:[{from,port,to}]}</code>. <code>port</code> is the output index (IF: 0 true, 1 false; Switch: one per branch, then None). Files from FlowLab 1.0 are upgraded when imported.'],
+ ['<code>workflow.js</code>','Compiled Node.js 18+ script: one async function per node, an <code>edges</code> list, and a <code>walk()</code> that follows it. <code>node workflow.js</code> runs once; add <code>--fast</code> to skip waiting, <code>--data file.json</code> for your own data, or <code>--serve 3000</code> to listen for real form posts and webhooks.'],
+ ['<code>workflow-n8n.json</code>','n8n import file. See the n8n tab for caveats.']])+`
+<h2>Keyboard and mouse</h2>`+tb(['Action','How'],[['Move a node','Drag it'],['Connect','Drag right dot to a left dot'],['Delete a line','Click it'],['Delete a node','Select it, press Delete (or use the button in the right panel)'],['Run','Ctrl + Enter'],['Zoom','Ctrl + mouse wheel, or the buttons at the bottom left of the canvas'],['Close docs','Esc']])+`
+<h2>Examples index</h2>`+tb(['Example','What it teaches'],Object.keys(EX).map(k=>[k,EX[k].d.split(/\.\s/)[0].replace(/^Teaches:\s*/,'')]))+`
+<h2>Glossary</h2>`+tb(['Term','Meaning'],[
+ ['Trigger','The event that starts a workflow.'],['Action','A step that does something (send, tag, call).'],
+ ['Item / object','The data passed between steps. One object in FlowLab, a list of items in n8n.'],
+ ['Branch','A path chosen by an IF or Switch.'],['Fallback / None branch','The path taken when no branch matches.'],['Merge field / expression','A placeholder replaced with real data when the step runs.'],
+ ['Execution / run','One pass of a workflow from trigger to end.'],['Compile','Turn the visual graph into code that runs without the editor.'],
+ ['DND','Do Not Disturb: the contact must not be messaged on that channel.'],['Segment','One billable SMS part: 160 plain characters, or 70 with emoji.'],
+ ['Idempotent','Safe to run twice without double effects (for example, set a tag instead of adding a duplicate row).']])+`</div>`
+};
+/*DOCS-END*/
+const dv=document.createElement('div');dv.id='docs';dv.innerHTML='<div class="dh"><b>FlowLab docs</b><div id="dtabs"></div><button id="dx">Close</button></div><div id="dc"></div>';document.body.appendChild(dv);
+const DT=[['guide','Guide'],['cond','Conditions'],['trig','Triggers'],['n8n','n8n'],['ghl','GoHighLevel'],['tools','Other tools'],['ref','Reference']];
+function showDoc(k,a){$('#dtabs').innerHTML=DT.map(([a,b])=>`<button data-d="${a}" class="${a==k?'on':''}">${b}</button>`).join('');$('#dc').innerHTML=DOCS[k]();$('#dc').scrollTop=0;if(a){const t=document.getElementById(a);if(t)t.scrollIntoView()}}
+function openDoc(k,a){dv.classList.add('on');showDoc(k,a)}
+$('#dc').addEventListener('click',e=>{const j=e.target.dataset.j;if(j){e.preventDefault();showDoc('trig',j)}});
+$('#dtabs').onclick=e=>{if(e.target.dataset.d)showDoc(e.target.dataset.d)};
+$('#docb').onclick=()=>{dv.classList.add('on');showDoc('guide')};
+$('#dx').onclick=()=>dv.classList.remove('on');
+addEventListener('keydown',e=>{if(e.key=='Escape')dv.classList.remove('on')});
+
+/* ---------- 14. About, logo and disclaimer ---------- */
+const DISC=`<p><b>FlowLab is an independent, offline learning tool.</b> It is not affiliated with, endorsed by, or sponsored by n8n GmbH, HighLevel Inc. (GoHighLevel), or Anthropic.</p>
+<p><b>Trademarks.</b> n8n, GoHighLevel and any other product names are trademarks of their respective owners. They appear only to describe what FlowLab's exercises imitate or can export to.</p>
+<p><b>Original work.</b> FlowLab contains no code, logos, icons, templates or documentation copied from those products. Its name, logo, node names and example workflows are original. Concepts such as triggers, nodes and expressions are generic ideas shared across automation tools.</p>
+<p><b>Export feature.</b> "Export n8n JSON" writes a file in a format intended for import into n8n. It is unofficial, may stop working when n8n changes, and is provided for learning and interoperability.</p>
+<p><b>Simulations.</b> SMS, email and wait steps are simulated and send nothing. The phone, inbox and contact record in the Test panel are imitations for practice. If you connect real services, you are responsible for following their terms, privacy law, and messaging rules (consent and opt-out).</p>
+<p><b>No warranty.</b> Provided "as is", without warranty of any kind, and not legal advice. Check the license and terms of any third-party product you use or imitate. The documentation inside the app is a general summary; confirm details in each product's official docs.</p>`;
+const ab=document.createElement('div');ab.id='abt';
+ab.innerHTML='<div class="box" role="dialog" aria-label="About FlowLab"><div class="lgrow">'+document.querySelector('svg.lg').outerHTML+'FlowLab '+VERSION+'</div>'+DISC+'<button class="go" id="abok">I understand</button></div>';
+document.body.appendChild(ab);
+$('#abb').onclick=()=>ab.classList.add('on');
+$('#abok').onclick=()=>{ab.classList.remove('on');store.set('flowlab_ack','1')};
+addEventListener('keydown',e=>{if(e.key=='Escape')ab.classList.remove('on')});
+if(!store.get('flowlab_ack'))ab.classList.add('on');
+
+document.addEventListener('click',e=>{const m=$('#filem');if(m.open&&(!m.contains(e.target)||e.target.tagName=='BUTTON'))m.open=false});
+try{new ResizeObserver(()=>document.body.style.setProperty('--hh',$('header').offsetHeight+'px')).observe($('header'))}catch(e){}
+
+/* ---------- 15. Start-up ---------- */
+palette();
+(()=>{let ok=false;try{const s=JSON.parse(store.get('flowlab'));if(s&&s.nodes&&s.nodes.length){S=normalize(s);fixSeq();ok=true}}catch(e){}
+ zoom(+store.get('flowlab_zoom')||1);
+ if(!ok)loadExample('Lead qualification & routing');else{draw();inspect()}
+ if(store.get('flowlab_sim')==='1')simShow(true);
+ $('#out').textContent='Press "Run workflow" to execute. The Test panel shows the form, the contact\'s phone, the inboxes and the contact record as the run plays. Tabs on top of this panel show the workflow as JSON, as compiled Node.js code and as n8n JSON.'})();
+</script></body></html>
